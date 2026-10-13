@@ -1,0 +1,1140 @@
+{
+ "source": "extracted from game/shared/ms/scriptcmds.cpp, script.cpp, game/server/monsters/npcscript.cpp, game/shared/weapons/genericitem.cpp",
+ "global_commands": {
+  "add": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "addorigin": {
+   "handler": "ScriptCmd_Origin",
+   "conditional": false
+  },
+  "addvelocity": {
+   "handler": "ScriptCmd_Velocity",
+   "conditional": false
+  },
+  "applyeffect": {
+   "handler": "ScriptCmd_ApplyEffect",
+   "conditional": false
+  },
+  "array.add": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.add_unique": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.clear": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.copy": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.create": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.del": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.erase": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "array.set": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "attackprop": {
+   "handler": "ScriptCmd_AttackProp",
+   "conditional": false
+  },
+  "bleed": {
+   "handler": "ScriptCmd_bleed",
+   "conditional": false
+  },
+  "bplayermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "breakloop": {
+   "handler": "ScriptCmd_breakloop",
+   "conditional": false
+  },
+  "callclitemevent": {
+   "handler": "ScriptCmd_CallClItemEvent",
+   "conditional": false
+  },
+  "callevent": {
+   "handler": "ScriptCmd_CallEvent",
+   "conditional": false
+  },
+  "calleventloop": {
+   "handler": "ScriptCmd_CallEvent",
+   "conditional": false
+  },
+  "calleventtimed": {
+   "handler": "ScriptCmd_CallEvent",
+   "conditional": false
+  },
+  "callexternal": {
+   "handler": "ScriptCmd_CallEvent",
+   "conditional": false
+  },
+  "capvar": {
+   "handler": "ScriptCmd_CapVar",
+   "conditional": false
+  },
+  "changelevel": {
+   "handler": "ScriptCmd_ChangeLevel",
+   "conditional": false
+  },
+  "chatlog": {
+   "handler": "ScriptCmd_ChatLog",
+   "conditional": false
+  },
+  "clearplayerhits": {
+   "handler": "ScriptCmd_ClearPlayerHits",
+   "conditional": false
+  },
+  "cleffect": {
+   "handler": "ScriptCmd_ClEffect",
+   "conditional": false
+  },
+  "clientcmd": {
+   "handler": "ScriptCmd_ClientCmd",
+   "conditional": false
+  },
+  "clientevent": {
+   "handler": "ScriptCmd_ClientEvent",
+   "conditional": false
+  },
+  "companion": {
+   "handler": "ScriptCmd_Companion",
+   "conditional": false
+  },
+  "conflictcheck": {
+   "handler": "ScriptCmd_ConflictCheck",
+   "conditional": false
+  },
+  "consolemsg": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "createitem": {
+   "handler": "ScriptCmd_Create",
+   "conditional": false
+  },
+  "createnpc": {
+   "handler": "ScriptCmd_Create",
+   "conditional": false
+  },
+  "darkenbloom": {
+   "handler": "ScriptCmd_DarkenBloom",
+   "conditional": false
+  },
+  "dbg": {
+   "handler": "ScriptCmd_Debug",
+   "conditional": false
+  },
+  "dbg_all": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_gm": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_hand_active": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_hand_off": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_index": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_items": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_npcs": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_players": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_scriptname": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_target": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "dbg_world": {
+   "handler": "ScriptCmd_DebugEntities",
+   "conditional": false
+  },
+  "debugprint": {
+   "handler": "ScriptCmd_Debug",
+   "conditional": false
+  },
+  "dec": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "decvar": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "deleteent": {
+   "handler": "ScriptCmd_DeleteEntity",
+   "conditional": false
+  },
+  "deleteme": {
+   "handler": "ScriptCmd_DeleteEntity",
+   "conditional": false
+  },
+  "desc": {
+   "handler": "ScriptCmd_Desc",
+   "conditional": false
+  },
+  "displaydesc": {
+   "handler": "ScriptCmd_syncitem",
+   "conditional": false
+  },
+  "divide": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "dplayermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "drainhp": {
+   "handler": "ScriptCmd_DrainHP",
+   "conditional": false
+  },
+  "drainstamina": {
+   "handler": "ScriptCmd_DrainStamina",
+   "conditional": false
+  },
+  "drop_to_floor": {
+   "handler": "ScriptCmd_DropToFloor",
+   "conditional": false
+  },
+  "effect": {
+   "handler": "ScriptCmd_Effect",
+   "conditional": false
+  },
+  "emitsound": {
+   "handler": "ScriptCmd_EmitSound",
+   "conditional": false
+  },
+  "endgame": {
+   "handler": "ScriptCmd_endgame",
+   "conditional": false
+  },
+  "erasefile": {
+   "handler": "ScriptCmd_EraseFile",
+   "conditional": false
+  },
+  "errormessage": {
+   "handler": "ScriptCmd_ErrorMessage",
+   "conditional": false
+  },
+  "exitevent": {
+   "handler": "ScriptCmd_exitevent",
+   "conditional": false
+  },
+  "forcesend": {
+   "handler": "ScriptCmd_SetEntForceSend",
+   "conditional": false
+  },
+  "g_array.add": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.add_unique": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.clear": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.create": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.del": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.erase": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_array.set": {
+   "handler": "ScriptCmd_Array",
+   "conditional": false
+  },
+  "g_hashmap.clear": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_hashmap.copy": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_hashmap.create": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_hashmap.del": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_hashmap.erase": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_hashmap.set": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "g_set.add": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "g_set.clear": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "g_set.copy": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "g_set.create": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "g_set.del": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "g_set.erase": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "gagplayer": {
+   "handler": "ScriptCmd_GagPlayer",
+   "conditional": false
+  },
+  "getents": {
+   "handler": "ScriptCmd_GetEnts",
+   "conditional": false
+  },
+  "getitemarray": {
+   "handler": "ScriptCmd_GetItemArray",
+   "conditional": false
+  },
+  "getplayer": {
+   "handler": "ScriptCmd_GetPlayer",
+   "conditional": false
+  },
+  "getplayers": {
+   "handler": "ScriptCmd_GetPlayers",
+   "conditional": false
+  },
+  "getplayersarray": {
+   "handler": "ScriptCmd_GetPlayersArray",
+   "conditional": false
+  },
+  "getplayersnb": {
+   "handler": "ScriptCmd_GetPlayersNB",
+   "conditional": false
+  },
+  "giveexp": {
+   "handler": "ScriptCmd_GiveExp",
+   "conditional": false
+  },
+  "givehp": {
+   "handler": "ScriptCmd_GiveHPMP",
+   "conditional": false
+  },
+  "givemp": {
+   "handler": "ScriptCmd_GiveHPMP",
+   "conditional": false
+  },
+  "gplayermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "gravity": {
+   "handler": "ScriptCmd_Gravity",
+   "conditional": false
+  },
+  "hashmap.clear": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "hashmap.copy": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "hashmap.create": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "hashmap.del": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "hashmap.erase": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "hashmap.set": {
+   "handler": "ScriptCmd_HashMap",
+   "conditional": false
+  },
+  "helptip": {
+   "handler": "ScriptCmd_HelpTip",
+   "conditional": false
+  },
+  "hitmulti": {
+   "handler": "ScriptCmd_HitMulti",
+   "conditional": false
+  },
+  "hud.addimgicon": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "hud.addstatusicon": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "hud.killicons": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "hud.killimgicon": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "hud.killstatusicon": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "hud.setfnconnection": {
+   "handler": "ScriptCmd_HudIcon",
+   "conditional": false
+  },
+  "if": {
+   "handler": "ScriptCmd_If",
+   "conditional": true
+  },
+  "if()": {
+   "handler": "ScriptCmd_If",
+   "conditional": true
+  },
+  "inc": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "incvar": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "infomsg": {
+   "handler": "ScriptCmd_InfoMessage",
+   "conditional": false
+  },
+  "itemrestrict": {
+   "handler": "ScriptCmd_ItemRestrict",
+   "conditional": false
+  },
+  "kill": {
+   "handler": "ScriptCmd_Kill",
+   "conditional": false
+  },
+  "local": {
+   "handler": "ScriptCmd_SetVar",
+   "conditional": false
+  },
+  "localmenu.close": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "localmenu.open": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "localmenu.reset": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "markdmg": {
+   "handler": "ScriptCmd_MarkDmg",
+   "conditional": false
+  },
+  "messageall": {
+   "handler": "ScriptCmd_MessageAll",
+   "conditional": false
+  },
+  "mod": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "movetype": {
+   "handler": "ScriptCmd_MoveType",
+   "conditional": false
+  },
+  "multiply": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "name": {
+   "handler": "ScriptCmd_Name",
+   "conditional": false
+  },
+  "name_prefix": {
+   "handler": "ScriptCmd_NamePrefix",
+   "conditional": false
+  },
+  "name_unique": {
+   "handler": "ScriptCmd_NameUnique",
+   "conditional": false
+  },
+  "nosend": {
+   "handler": "ScriptCmd_SetEntNoSend",
+   "conditional": false
+  },
+  "npcmove": {
+   "handler": "ScriptCmd_NpcMove",
+   "conditional": false
+  },
+  "overwritespell": {
+   "handler": "ScriptCmd_OverwriteSpell",
+   "conditional": false
+  },
+  "playermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "playername": {
+   "handler": "ScriptCmd_PlayerName",
+   "conditional": false
+  },
+  "playertitle": {
+   "handler": "ScriptCmd_PlayerTitle",
+   "conditional": false
+  },
+  "playmp3": {
+   "handler": "ScriptCmd_PlayMP3",
+   "conditional": false
+  },
+  "playrandomsound": {
+   "handler": "ScriptCmd_PlaySound",
+   "conditional": false
+  },
+  "playsound": {
+   "handler": "ScriptCmd_PlaySound",
+   "conditional": false
+  },
+  "popup": {
+   "handler": "ScriptCmd_ErrorMessage",
+   "conditional": false
+  },
+  "precachefile": {
+   "handler": "ScriptCmd_PrecacheFile",
+   "conditional": false
+  },
+  "projectilesize": {
+   "handler": "ScriptCmd_ProjectileSize",
+   "conditional": false
+  },
+  "quest": {
+   "handler": "ScriptCmd_Quest",
+   "conditional": false
+  },
+  "registerdefaults": {
+   "handler": "ScriptCmd_RegisterDefaults",
+   "conditional": false
+  },
+  "registereffect": {
+   "handler": "ScriptCmd_RegisterEffect",
+   "conditional": false
+  },
+  "registerlocal.button": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "registerlocal.image": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "registerlocal.menu": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "registerlocal.paragraph": {
+   "handler": "ScriptCmd_LocalPanel",
+   "conditional": false
+  },
+  "registerrace": {
+   "handler": "ScriptCmd_RegisterRace",
+   "conditional": false
+  },
+  "registertexture": {
+   "handler": "ScriptCmd_RegisterTexture",
+   "conditional": false
+  },
+  "registertitle": {
+   "handler": "ScriptCmd_RegisterTitle",
+   "conditional": false
+  },
+  "removeeffect": {
+   "handler": "ScriptCmd_RemoveEffect",
+   "conditional": false
+  },
+  "removescript": {
+   "handler": "ScriptCmd_RemoveScript",
+   "conditional": false
+  },
+  "repeatdelay": {
+   "handler": "ScriptCmd_RepeatDelay",
+   "conditional": false
+  },
+  "resetglobals": {
+   "handler": "ScriptCmd_resetglobals",
+   "conditional": false
+  },
+  "resetloop": {
+   "handler": "ScriptCmd_resetloop",
+   "conditional": false
+  },
+  "respawn": {
+   "handler": "ScriptCmd_Respawn",
+   "conditional": false
+  },
+  "return": {
+   "handler": "ScriptCmd_Return",
+   "conditional": false
+  },
+  "rplayermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  },
+  "scriptflags": {
+   "handler": "ScriptCmd_ScriptFlags",
+   "conditional": false
+  },
+  "servercmd": {
+   "handler": "ScriptCmd_ServerCmd",
+   "conditional": false
+  },
+  "set.add": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "set.clear": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "set.copy": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "set.create": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "set.del": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "set.erase": {
+   "handler": "ScriptCmd_Set",
+   "conditional": false
+  },
+  "setalive": {
+   "handler": "ScriptCmd_SetAlive",
+   "conditional": false
+  },
+  "setangle": {
+   "handler": "ScriptCmd_SetAngle",
+   "conditional": false
+  },
+  "setatkspeed": {
+   "handler": "ScriptCmd_SetAtkSpeed",
+   "conditional": false
+  },
+  "setbbox": {
+   "handler": "ScriptCmd_SetBBox",
+   "conditional": false
+  },
+  "setcallback": {
+   "handler": "ScriptCmd_SetCallBack",
+   "conditional": false
+  },
+  "setcvar": {
+   "handler": "ScriptCmd_SetCVar",
+   "conditional": false
+  },
+  "setenv": {
+   "handler": "ScriptCmd_SetEnv",
+   "conditional": false
+  },
+  "setexpstat": {
+   "handler": "ScriptCmd_SetExpStat",
+   "conditional": false
+  },
+  "setfollow": {
+   "handler": "ScriptCmd_SetFollow",
+   "conditional": false
+  },
+  "setgaitspeed": {
+   "handler": "ScriptCmd_SetGaitSpeed",
+   "conditional": false
+  },
+  "setmodel": {
+   "handler": "ScriptCmd_SetModel",
+   "conditional": false
+  },
+  "setmodelbody": {
+   "handler": "ScriptCmd_SetModelBody",
+   "conditional": false
+  },
+  "setorigin": {
+   "handler": "ScriptCmd_Origin",
+   "conditional": false
+  },
+  "setprop": {
+   "handler": "ScriptCmd_SetProp",
+   "conditional": false
+  },
+  "setpvp": {
+   "handler": "ScriptCmd_SetPVP",
+   "conditional": false
+  },
+  "setquality": {
+   "handler": "ScriptCmd_SetQuality",
+   "conditional": false
+  },
+  "setquantity": {
+   "handler": "ScriptCmd_setquantity",
+   "conditional": false
+  },
+  "setsolid": {
+   "handler": "ScriptCmd_SetSolid",
+   "conditional": false
+  },
+  "settrans": {
+   "handler": "ScriptCmd_SetTrans",
+   "conditional": false
+  },
+  "setvar": {
+   "handler": "ScriptCmd_SetVar",
+   "conditional": false
+  },
+  "setvarg": {
+   "handler": "ScriptCmd_SetVar",
+   "conditional": false
+  },
+  "setvelocity": {
+   "handler": "ScriptCmd_Velocity",
+   "conditional": false
+  },
+  "setviewmodelprop": {
+   "handler": "ScriptCmd_SetViewModelProp",
+   "conditional": false
+  },
+  "setwearpos": {
+   "handler": "ScriptCmd_SetWearPos",
+   "conditional": false
+  },
+  "sound.play3d": {
+   "handler": "ScriptCmd_SoundPlay3D",
+   "conditional": false
+  },
+  "sound.pm_play": {
+   "handler": "ScriptCmd_SoundPMPlay",
+   "conditional": false
+  },
+  "sound.setvolume": {
+   "handler": "ScriptCmd_SoundSetVolume",
+   "conditional": false
+  },
+  "splayviewanim": {
+   "handler": "ScriptCmd_SPlayViewAnim",
+   "conditional": false
+  },
+  "storeentity": {
+   "handler": "ScriptCmd_StoreEntity",
+   "conditional": false
+  },
+  "stradd": {
+   "handler": "ScriptCmd_StrAdd",
+   "conditional": false
+  },
+  "strconc": {
+   "handler": "ScriptCmd_StrConc",
+   "conditional": false
+  },
+  "subtract": {
+   "handler": "ScriptCmd_MathSet",
+   "conditional": false
+  },
+  "svplayrandomsound": {
+   "handler": "ScriptCmd_PlaySound",
+   "conditional": false
+  },
+  "svplaysound": {
+   "handler": "ScriptCmd_PlaySound",
+   "conditional": false
+  },
+  "svsound.play3d": {
+   "handler": "ScriptCmd_SoundPlay3D",
+   "conditional": false
+  },
+  "syncitem": {
+   "handler": "ScriptCmd_syncitem",
+   "conditional": false
+  },
+  "teleportdest": {
+   "handler": "ScriptCmd_teleportdest",
+   "conditional": false
+  },
+  "token.add": {
+   "handler": "ScriptCmd_TokenAdd",
+   "conditional": false
+  },
+  "token.del": {
+   "handler": "ScriptCmd_TokenDel",
+   "conditional": false
+  },
+  "token.scramble": {
+   "handler": "ScriptCmd_TokenScramble",
+   "conditional": false
+  },
+  "token.set": {
+   "handler": "ScriptCmd_TokenSet",
+   "conditional": false
+  },
+  "torandomspawn": {
+   "handler": "ScriptCmd_ToRandomSpawn",
+   "conditional": false
+  },
+  "tospawn": {
+   "handler": "ScriptCmd_ToSpawn",
+   "conditional": false
+  },
+  "usetrigger": {
+   "handler": "ScriptCmd_UseTrigger",
+   "conditional": false
+  },
+  "vectoradd": {
+   "handler": "ScriptCmd_VectorAdd",
+   "conditional": false
+  },
+  "vectormultiply": {
+   "handler": "ScriptCmd_VectorMultiply",
+   "conditional": false
+  },
+  "vectorscale": {
+   "handler": "ScriptCmd_VectorMultiply",
+   "conditional": false
+  },
+  "vectorset": {
+   "handler": "ScriptCmd_VectorSet",
+   "conditional": false
+  },
+  "volume": {
+   "handler": "ScriptCmd_Volume",
+   "conditional": false
+  },
+  "weight": {
+   "handler": "ScriptCmd_Weight",
+   "conditional": false
+  },
+  "wipespell": {
+   "handler": "ScriptCmd_WipeSpell",
+   "conditional": false
+  },
+  "writeline": {
+   "handler": "ScriptCmd_WriteLine",
+   "conditional": false
+  },
+  "xdodamage": {
+   "handler": "ScriptCmd_XDoDamage",
+   "conditional": false
+  },
+  "yplayermessage": {
+   "handler": "ScriptCmd_Message",
+   "conditional": false
+  }
+ },
+ "monster_commands": {
+  "addgold": false,
+  "addstoreitem": false,
+  "blind": false,
+  "blood": false,
+  "cancelattack": false,
+  "catchspeech": false,
+  "clearfx": false,
+  "createstore": false,
+  "dmgmulti": false,
+  "dodamage": false,
+  "expadj": false,
+  "float": false,
+  "fly": false,
+  "fov": false,
+  "gaitframerate": false,
+  "giveitem": false,
+  "gold": false,
+  "hearingsensitivity": false,
+  "height": false,
+  "hp": false,
+  "invincible": false,
+  "invisible": false,
+  "look": false,
+  "maxslope": false,
+  "menu.autoopen": false,
+  "menu.open": false,
+  "menuitem.register": false,
+  "menuitem.remove": false,
+  "movespeed": false,
+  "nopush": false,
+  "npcstore.additem": false,
+  "npcstore.create": false,
+  "npcstore.offer": false,
+  "npcstore.remove": false,
+  "offer": false,
+  "offerstore": false,
+  "playanim": false,
+  "race": false,
+  "recvoffer": false,
+  "removeitem": false,
+  "roam": false,
+  "roamdelay": false,
+  "say": false,
+  "saytext": false,
+  "saytextrange": false,
+  "see": true,
+  "setanim.frame": false,
+  "setanim.framerate": false,
+  "setanim.movespeed": false,
+  "setanimlegs": false,
+  "setanimtorso": false,
+  "setidleanim": false,
+  "setmonsterclip": false,
+  "setmoveanim": false,
+  "setmovedest": false,
+  "setstat": false,
+  "setstatus": false,
+  "setturnrate": false,
+  "skilllevel": false,
+  "stepsize": false,
+  "stopmoving": false,
+  "storage": false,
+  "takedmg": false,
+  "tossprojectile": false,
+  "width": false
+ },
+ "item_commands": {
+  "attachlight": false,
+  "attachsprite": false,
+  "callownerevent": false,
+  "cancelattack": false,
+  "expiretime": false,
+  "fall": false,
+  "groupable": false,
+  "learnspell": false,
+  "listcontents": false,
+  "playanim": false,
+  "playermessage": false,
+  "playermessagecl": false,
+  "playowneranim": false,
+  "playrandomsound": false,
+  "playrandomsoundcl": false,
+  "playsound": false,
+  "playsoundcl": false,
+  "playviewanim": false,
+  "projectiletouch": false,
+  "quality": false,
+  "registerarmor": false,
+  "registerattack": false,
+  "registercontainer": false,
+  "registerdrink": false,
+  "registerprojectile": false,
+  "registerspell": false,
+  "setanimext": false,
+  "setdmg": false,
+  "sethand": false,
+  "setholdmodel": false,
+  "sethudsprite": false,
+  "setmodelskin": false,
+  "setpmodel": false,
+  "setshield": false,
+  "setviewmodel": false,
+  "setviewmodelskin": false,
+  "setworldmodel": false,
+  "solidifyprojectile": false,
+  "svpplaysound": false,
+  "useable": false,
+  "value": false,
+  "wearable": false,
+  "wield": false,
+  "wipespells": false
+ },
+ "functions": {
+  "$alphanum": "ScriptGetter_AlphaNum",
+  "$and": "ScriptGetter_Conjunction",
+  "$anglediff": "ScriptGetter_AngleDiff",
+  "$angles": "ScriptGetter_Angles",
+  "$angles3d": "ScriptGetter_Angles3d",
+  "$anim_exists": "ScriptGetter_AnimExists",
+  "$can_damage": "ScriptGetter_CanDamage",
+  "$cap_first": "ScriptGetter_CapFirst",
+  "$clcol": "ScriptGetter_clcol",
+  "$cone_dot": "ScriptGetter_Cone",
+  "$cone_dot2D": "ScriptGetter_Cone",
+  "$dir": "ScriptGetter_Dir",
+  "$dist": "ScriptGetter_Dist",
+  "$dist2D": "ScriptGetter_Dist",
+  "$eval": "ScriptGetter_Eval",
+  "$filehash": "ScriptGetter_FileHash",
+  "$filesize": "ScriptGetter_FileSize",
+  "$float": "ScriptGetter_Float",
+  "$func": "ScriptGetter_Func",
+  "$g_get_array": "ScriptGetter_GetArray",
+  "$g_get_array_amt": "ScriptGetter_GetArray",
+  "$g_get_arrayfind": "ScriptGetter_GetArray",
+  "$g_get_hashmap": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_amt": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_exists": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_haskey": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_keys": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_pairs": "ScriptGetter_GetHashMap",
+  "$g_get_hashmap_values": "ScriptGetter_GetHashMap",
+  "$g_get_set": "ScriptGetter_GetSet",
+  "$g_get_set_amt": "ScriptGetter_GetSet",
+  "$g_get_set_exists": "ScriptGetter_GetSet",
+  "$g_get_set_hasvalue": "ScriptGetter_GetSet",
+  "$get": "ScriptGetter_Get",
+  "$get_array": "ScriptGetter_GetArray",
+  "$get_array_amt": "ScriptGetter_GetArray",
+  "$get_array_exists": "ScriptGetter_GetArray",
+  "$get_arrayfind": "ScriptGetter_GetArray",
+  "$get_attackprop": "ScriptGetter_GetAttackProp",
+  "$get_by_idx": "ScriptGetter_Get",
+  "$get_by_name": "ScriptGetter_GetByName",
+  "$get_contents": "ScriptGetter_GetContents",
+  "$get_cvar": "ScriptGetter_GetCVar",
+  "$get_fileline": "ScriptGetter_GetFileLine",
+  "$get_find_token": "ScriptGetter_GetFindToken",
+  "$get_ground_height": "ScriptGetter_GetGroundHeight",
+  "$get_hashmap": "ScriptGetter_GetHashMap",
+  "$get_hashmap_amt": "ScriptGetter_GetHashMap",
+  "$get_hashmap_exists": "ScriptGetter_GetHashMap",
+  "$get_hashmap_haskey": "ScriptGetter_GetHashMap",
+  "$get_hashmap_keys": "ScriptGetter_GetHashMap",
+  "$get_hashmap_pairs": "ScriptGetter_GetHashMap",
+  "$get_hashmap_values": "ScriptGetter_GetHashMap",
+  "$get_insphere": "ScriptGetter_GetInSphere",
+  "$get_isphere": "ScriptGetter_GetTSphereAndBox",
+  "$get_item_table": "ScriptGetter_GetItemTable",
+  "$get_jointype": "ScriptGetter_GetJoinType",
+  "$get_lastmap": "ScriptGetter_GetLastMap",
+  "$get_local_prop": "ScriptGetter_GetCl",
+  "$get_map_legit": "ScriptGetter_GetMapLegit",
+  "$get_quest_data": "ScriptGetter_GetQuestData",
+  "$get_random_token": "ScriptGetter_get_random_token",
+  "$get_scriptflag": "ScriptGetter_GetScriptFlag",
+  "$get_set": "ScriptGetter_GetSet",
+  "$get_set_amt": "ScriptGetter_GetSet",
+  "$get_set_exists": "ScriptGetter_GetSet",
+  "$get_set_hasvalue": "ScriptGetter_GetSet",
+  "$get_skill_ratio": "ScriptGetter_GetSkillRatio",
+  "$get_skillname": "ScriptGetter_GetSkillName",
+  "$get_sky_height": "ScriptGetter_GetSkyHeight",
+  "$get_takedmg": "ScriptGetter_GetTakeDmg",
+  "$get_tbox": "ScriptGetter_GetTSphereAndBox",
+  "$get_tbox_abs": "ScriptGetter_GetTSphereAndBox",
+  "$get_time": "ScriptGetter_GetTime",
+  "$get_token": "ScriptGetter_GetToken",
+  "$get_token_amt": "ScriptGetter_GetTokenAmt",
+  "$get_traceline": "ScriptGetter_GetTraceLine",
+  "$get_tsphere": "ScriptGetter_GetTSphereAndBox",
+  "$get_under_sky": "ScriptGetter_GetUnderSky",
+  "$getcl": "ScriptGetter_GetCl",
+  "$getcl_beam": "ScriptGetter_getcl_beam",
+  "$getcl_tsphere": "ScriptGetter_GetClTSphere",
+  "$indiam": "ScriptGetter_indiam",
+  "$indiam2D": "ScriptGetter_indiam",
+  "$inrange": "ScriptGetter_inrange",
+  "$insert": "ScriptGetter_ReplaceOrInsert",
+  "$inset_num": "ScriptGetter_inrange",
+  "$inset_string": "ScriptGetter_inrange",
+  "$int": "ScriptGetter_Int",
+  "$item_exists": "ScriptGetter_ItemExists",
+  "$lcase": "ScriptGetter_LCase",
+  "$left": "ScriptGetter_StringRightOrLeft",
+  "$len": "ScriptGetter_Len",
+  "$map_exists": "ScriptGetter_MapExists",
+  "$math": "ScriptGetter_MathReturn",
+  "$max": "ScriptGetter_MinMax",
+  "$mid": "ScriptGetter_Mid",
+  "$min": "ScriptGetter_MinMax",
+  "$neg": "ScriptGetter_Neg",
+  "$num": "ScriptGetter_Num",
+  "$or": "ScriptGetter_Conjunction",
+  "$pass": "ScriptGetter_Pass",
+  "$quote": "ScriptGetter_Quote",
+  "$rand": "ScriptGetter_Rand",
+  "$randf": "ScriptGetter_Rand",
+  "$random_of_set": "ScriptGetter_random_of_set",
+  "$ratio": "ScriptGetter_GetSkillRatio",
+  "$relpos": "ScriptGetter_RelPos",
+  "$relvel": "ScriptGetter_RelVel",
+  "$replace": "ScriptGetter_ReplaceOrInsert",
+  "$right": "ScriptGetter_StringRightOrLeft",
+  "$scan": "ScriptGetter_ScanShape",
+  "$search_string": "ScriptGetter_SearchString",
+  "$shape_cylinder": "ScriptGetter_ShapeCylinder",
+  "$shape_rect": "ScriptGetter_ShapeRect",
+  "$shape_sphere": "ScriptGetter_ShapeSphere",
+  "$sort_entlist": "ScriptGetter_SortEntList",
+  "$stradd": "ScriptGetter_StrAdd",
+  "$string_from": "ScriptGetter_StringUpToOrFrom",
+  "$string_upto": "ScriptGetter_StringUpToOrFrom",
+  "$subst": "ScriptGetter_ReplaceOrInsert",
+  "$timestamp": "ScriptGetter_TimeStamp",
+  "$tokenize": "ScriptGetter_tokenize",
+  "$ucase": "ScriptGetter_UCase",
+  "$vec": "ScriptGetter_Vec",
+  "$vec.pitch": "ScriptGetter_Vec",
+  "$vec.roll": "ScriptGetter_Vec",
+  "$vec.x": "ScriptGetter_Vec",
+  "$vec.y": "ScriptGetter_Vec",
+  "$vec.yaw": "ScriptGetter_Vec",
+  "$vec.z": "ScriptGetter_Vec",
+  "$veclen": "ScriptGetter_VecLen",
+  "$veclen2D": "ScriptGetter_VecLen",
+  "$within_box": "ScriptGetter_WithinBox",
+  "$within_cone2D": "ScriptGetter_Cone",
+  "$xor": "ScriptGetter_Conjunction"
+ }
+}
