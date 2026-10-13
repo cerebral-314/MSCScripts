@@ -56,6 +56,7 @@ class FileContext:
     fields: dict[str, str]               # names readable as fields here -> type
     dynamic_vars: set[str]               # variables that may exist at run time but are not fields here
     signatures: "SignatureTable"
+    kind: str = "monster"
     quirks: list[Quirk] = field(default_factory=list)
     uses_loop_iteration: bool = False
 
@@ -66,9 +67,29 @@ class FileContext:
 class SignatureTable:
     """One signature per event name across the corpus (mixins of different scripts must agree)."""
 
-    def __init__(self, inference: Inference):
+    def __init__(self, inference: Inference, events: list[str] | None = None):
         self.inference = inference
         self._cache: dict[str, Signature] = {}
+        # Method names must be unique per event name; assign them once, in a fixed order
+        self._methods: dict[str, str] = {}
+        taken: dict[str, str] = {}
+        for event in sorted(set(events or [])):
+            self._methods[event] = self._unique(event, taken)
+        self._taken = taken
+
+    @staticmethod
+    def _unique(event: str, taken: dict[str, str]) -> str:
+        method = names.event_method(event)
+        candidate, n = method, 2
+        while candidate in taken and taken[candidate] != event:
+            candidate, n = f"{method}{n}", n + 1
+        taken[candidate] = event
+        return candidate
+
+    def method_name(self, event: str) -> str:
+        if event not in self._methods:
+            self._methods[event] = self._unique(event, self._taken)
+        return self._methods[event]
 
     def get(self, event: str) -> Signature:
         if event in self._cache:
@@ -90,7 +111,7 @@ class SignatureTable:
                 type_ = self.inference.params.get((event, index), Evidence()).resolve({})
                 if type_ == BOOL:
                     type_ = INT
-            counts = self.inference.param_names.get((event, index))
+            counts = self.inference.param_names.get((event, index)) or self.inference.param_doc_names.get((event, index))
             if counts and not named_by_engine:
                 best = max(counts.items(), key=lambda kv: kv[1])[0]
                 pname = names.local(best)
@@ -99,7 +120,7 @@ class SignatureTable:
             used.add(pname)
             params.append((type_, pname))
         returns = "string" if event in self.inference.returns else "void"
-        sig = Signature(event, names.event_method(event), params, returns)
+        sig = Signature(event, self.method_name(event), params, returns)
         self._cache[event] = sig
         return sig
 
@@ -170,12 +191,16 @@ def convert(e: TExpr, want: str | None) -> TExpr:
             return TExpr(f"int({e.code})", INT)
         if t == BOOL:
             return TExpr(f"({e.code} ? 1 : 0)", INT)
+        if t == VECTOR:
+            return TExpr(f"Int(Text({e.code}))", INT)    # "(x,y,z)" reads as 0
         return TExpr(f"Int({e.code})", INT)
     if want == FLOAT:
         if t == INT:
             return TExpr(e.code, FLOAT, e.prec, e.literal)
         if t == BOOL:
             return TExpr(f"({e.code} ? 1.0f : 0.0f)", FLOAT)
+        if t == VECTOR:
+            return TExpr(f"Float(Text({e.code}))", FLOAT)  # "(x,y,z)" reads as 0
         return TExpr(f"Float({e.code})", FLOAT)
     if want == BOOL:
         return truthy(e)
@@ -354,6 +379,8 @@ class HandlerLowerer:
                 self._type_evidence(ev, self.locals[v.text][1])
             elif v.text in mapping.BUILTINS:
                 self._type_evidence(ev, mapping.BUILTINS[v.text][1])
+            elif v.text.lower() == "game.script.iteration":
+                ev.ints += 1
             else:
                 ev.strings += 1
                 if v.text not in self.ctx.dynamic_vars and not v.text.lower().startswith(("game.", "const.")):
@@ -489,9 +516,13 @@ class HandlerLowerer:
         args = [parse_token(t.text, t.quoted) for t in tokens]
         if len(args) == 1:
             a = args[0]
-            if isinstance(a, Not):
-                return negate(truthy(self.value(a.operand)))
-            return truthy(self.value(a))
+            operand = a.operand if isinstance(a, Not) else a
+            value = self.value(operand)
+            if isinstance(operand, Name) and value.literal == operand.text and re.fullmatch(r"[A-Z][A-Z0-9_]+", operand.text):
+                self.ctx.quirk(cmd.line, f"{operand.text} is never set by any script that runs this code, "
+                                         f"so `if {'!' if a is not operand else ''}{operand.text}` is always "
+                                         f"{'true' if a is not operand else 'false'}")
+            return negate(truthy(value)) if a is not operand else truthy(value)
         if len(args) == 2:
             self.ctx.quirk(cmd.line, f"condition with two operands ({' '.join(t.text for t in tokens)}) is always true")
             return TRUE
@@ -867,16 +898,20 @@ class HandlerLowerer:
             return [Line(f"{target.code} += {self.value(args[1], VECTOR).code}")]
         if name in ("vectormultiply", "vectorscale"):
             scalar = args[1]
+            factor = self.value(scalar)
+            if factor.type == VECTOR:
+                return [Line(f"{target.code} = Scale({target.code}, {factor.code})")]
             if isinstance(scalar, Number) and scalar.text.startswith("-"):
                 self.ctx.quirk(cmd.line, "vectormultiply with a negative scalar sets the vector to (0,0,0)")
-            return [Line(f"{target.code} *= {self.value(scalar, FLOAT).code}")]
+            return [Line(f"{target.code} *= {convert(factor, FLOAT).code}")]
         return self._legacy(name, tokens[0].text, args[1:])
 
     def _token(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
         target = self._lvalue(tokens[0].text)
         helper = {"token.add": "TokenAdd", "token.del": "TokenRemove", "token.set": "TokenSet",
                   "token.scramble": "TokenShuffle"}.get(name)
-        if target is None or helper is None or target.type != STRING:
+        needed = {"TokenAdd": 1, "TokenRemove": 1, "TokenSet": 2, "TokenShuffle": 0}.get(helper or "", 0)
+        if target is None or helper is None or target.type != STRING or len(args) - 1 < needed:
             return self._legacy(name, tokens[0].text, args[1:])
         extra = [self.value(a, INT if (helper in ("TokenRemove", "TokenSet") and i == 0) else STRING).code
                  for i, a in enumerate(args[1:])]
@@ -955,7 +990,7 @@ class HandlerLowerer:
     # mapped commands -----------------------------------------------------------------------
 
     def _mapped_command(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        spec = mapping.COMMANDS.get(name)
+        spec = (mapping.ITEM_COMMANDS.get(name) if self.ctx.kind == "item" else None) or mapping.COMMANDS.get(name)
         if spec is not None:
             call = self._wrapper_call(spec, args)
             if call is not None:

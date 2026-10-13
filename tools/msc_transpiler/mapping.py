@@ -149,6 +149,12 @@ COMMANDS: dict[str, CommandSpec] = {
     "precachefile": CommandSpec("PrecacheFile", P("text script"), "Precache another script's resources"),
 }
 
+# Item scripts: the item's own command replaces the global one with the same name
+ITEM_COMMANDS: dict[str, CommandSpec] = {
+    "playermessage": CommandSpec("OwnerMessage", P("text message"), "Message to the item's owner"),
+    "playermessagecl": CommandSpec("OwnerMessageClient", P("text message"), "Client message to the item's owner"),
+}
+
 # Commands lowered to plain AngelScript (assignments, control flow) - never wrapped.
 NATIVE_COMMANDS = {
     "setvar", "setvard", "setvarg", "local", "const", "add", "subtract", "subract", "multiply", "divide",

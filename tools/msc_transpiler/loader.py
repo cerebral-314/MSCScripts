@@ -79,7 +79,9 @@ def _closure_names(corpus: Corpus, leaf: str) -> list[str]:
     return seen
 
 
-def load(corpus: Corpus, leaf: str, kind: str | None = None) -> Load:
+def load(corpus: Corpus, leaf: str, kind: str | None = None, kind_for=None) -> Load:
+    """kind_for(name) -> kind lets the caller parse every file with one consistent kind
+    (the transpiler shares included files between scripts, so it parses each file once)."""
     leaf = normalize(leaf)
     if kind is None:
         kind = classify_kind(leaf, _closure_names(corpus, leaf))
@@ -88,7 +90,7 @@ def load(corpus: Corpus, leaf: str, kind: str | None = None) -> Load:
     state = {"scope": "shared"}
 
     def spawn(name: str, allow_duplicate: bool, includer: str | None) -> bool:
-        parsed: ParsedFile | None = corpus.parse(name, kind)
+        parsed: ParsedFile | None = corpus.parse(name, kind_for(name) if kind_for else kind)
         if parsed is None:
             return False
         if not allow_duplicate and any(d.lower() == parsed.name.lower() for d in dependencies):

@@ -70,6 +70,9 @@ def local(name: str) -> str:
 
 
 def event_method(event: str) -> str:
+    # game_+attack2 / game_-attack2 are the press and release of +attack2
+    event = re.sub(r"\+(?=\w)", "press_", event)
+    event = re.sub(r"(?<=[_\W])-(?=\w)|^-(?=\w)", "release_", event)
     method = "On" + pascal(event)
     return method + "Event" if method in RESERVED_METHODS else method
 

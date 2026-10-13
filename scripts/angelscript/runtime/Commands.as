@@ -7,6 +7,12 @@ mixin class LegacyCommands
 {
 
 	// name - Display name; `prefix|name` sets the prefix too
+	void SetName()
+	{
+		host.Command("name");
+	}
+
+	// name - Display name; `prefix|name` sets the prefix too
 	void SetName(const string &in name)
 	{
 		host.Command("name", { name });
@@ -22,6 +28,12 @@ mixin class LegacyCommands
 	void SetUniqueName(const string &in name)
 	{
 		host.Command("name_unique", { name });
+	}
+
+	// desc - Description text (max 96 characters)
+	void SetDescription()
+	{
+		host.Command("desc");
 	}
 
 	// desc - Description text (max 96 characters)
@@ -211,6 +223,12 @@ mixin class LegacyCommands
 	}
 
 	// setbbox - npcsize, animsize or `mins maxs`
+	void SetBoundingBox()
+	{
+		host.Command("setbbox");
+	}
+
+	// setbbox - npcsize, animsize or `mins maxs`
 	void SetBoundingBox(const string &in box)
 	{
 		host.Command("setbbox", { box });
@@ -229,9 +247,21 @@ mixin class LegacyCommands
 	}
 
 	// playanim - `once|hold|loop|critical|break name` (monsters) or `name` (items)
+	void PlayAnim()
+	{
+		host.Command("playanim");
+	}
+
+	// playanim - `once|hold|loop|critical|break name` (monsters) or `name` (items)
 	void PlayAnim(const string &in anim)
 	{
 		host.Command("playanim", { anim });
+	}
+
+	// playowneranim - Animation on the item's owner
+	void PlayOwnerAnim()
+	{
+		host.Command("playowneranim");
 	}
 
 	// playowneranim - Animation on the item's owner
@@ -244,6 +274,12 @@ mixin class LegacyCommands
 	void PlayViewAnim(int anim)
 	{
 		host.Command("playviewanim", { Text(anim) });
+	}
+
+	// setviewmodelprop - View model property
+	void SetViewModelProp(const string &in item)
+	{
+		host.Command("setviewmodelprop", { item });
 	}
 
 	// setviewmodelprop - View model property
@@ -289,15 +325,33 @@ mixin class LegacyCommands
 	}
 
 	// setangle - `face|view|... value`
+	void SetAngle()
+	{
+		host.Command("setangle");
+	}
+
+	// setangle - `face|view|... value`
 	void SetAngle(const string &in args)
 	{
 		host.Command("setangle", { args });
 	}
 
 	// setmovedest - `none|<target>|<origin> <distance> [flee]`
+	void SetMoveDest()
+	{
+		host.Command("setmovedest");
+	}
+
+	// setmovedest - `none|<target>|<origin> <distance> [flee]`
 	void SetMoveDest(const string &in args)
 	{
 		host.Command("setmovedest", { args });
+	}
+
+	// setprop - Raw entity property (pev)
+	void SetProp(const string &in target, const string &in prop)
+	{
+		host.Command("setprop", { target, prop });
 	}
 
 	// setprop - Raw entity property (pev)
@@ -331,9 +385,21 @@ mixin class LegacyCommands
 	}
 
 	// playsound - `<channel> [volume] <sound> [attenuation] [pitch]`
+	void PlaySound(int channel)
+	{
+		host.Command("playsound", { Text(channel) });
+	}
+
+	// playsound - `<channel> [volume] <sound> [attenuation] [pitch]`
 	void PlaySound(int channel, const string &in args)
 	{
 		host.Command("playsound", { Text(channel), args });
+	}
+
+	// playrandomsound - `<channel> [volume] <sound> <sound> ...`
+	void PlayRandomSound(int channel)
+	{
+		host.Command("playrandomsound", { Text(channel) });
 	}
 
 	// playrandomsound - `<channel> [volume] <sound> <sound> ...`
@@ -343,9 +409,21 @@ mixin class LegacyCommands
 	}
 
 	// svplaysound - Server-side sound
+	void ServerPlaySound(int channel)
+	{
+		host.Command("svplaysound", { Text(channel) });
+	}
+
+	// svplaysound - Server-side sound
 	void ServerPlaySound(int channel, const string &in args)
 	{
 		host.Command("svplaysound", { Text(channel), args });
+	}
+
+	// say - Speak a sound from npc/
+	void Say()
+	{
+		host.Command("say");
 	}
 
 	// say - Speak a sound from npc/
@@ -355,9 +433,21 @@ mixin class LegacyCommands
 	}
 
 	// saytext - Chat bubble text
+	void SayText()
+	{
+		host.Command("saytext");
+	}
+
+	// saytext - Chat bubble text
 	void SayText(const string &in message)
 	{
 		host.Command("saytext", { message });
+	}
+
+	// infomsg - Info popup (player or `all`)
+	void InfoMessage(const string &in player, const string &in title)
+	{
+		host.Command("infomsg", { player, title });
 	}
 
 	// infomsg - Info popup (player or `all`)
@@ -367,9 +457,21 @@ mixin class LegacyCommands
 	}
 
 	// playermessage - Message to a player
+	void PlayerMessage(const string &in player)
+	{
+		host.Command("playermessage", { player });
+	}
+
+	// playermessage - Message to a player
 	void PlayerMessage(const string &in player, const string &in message)
 	{
 		host.Command("playermessage", { player, message });
+	}
+
+	// rplayermessage - Red message to a player
+	void PlayerMessageRed(const string &in player)
+	{
+		host.Command("rplayermessage", { player });
 	}
 
 	// rplayermessage - Red message to a player
@@ -379,9 +481,21 @@ mixin class LegacyCommands
 	}
 
 	// gplayermessage - Green message to a player
+	void PlayerMessageGreen(const string &in player)
+	{
+		host.Command("gplayermessage", { player });
+	}
+
+	// gplayermessage - Green message to a player
 	void PlayerMessageGreen(const string &in player, const string &in message)
 	{
 		host.Command("gplayermessage", { player, message });
+	}
+
+	// bplayermessage - Blue message to a player
+	void PlayerMessageBlue(const string &in player)
+	{
+		host.Command("bplayermessage", { player });
 	}
 
 	// bplayermessage - Blue message to a player
@@ -391,9 +505,21 @@ mixin class LegacyCommands
 	}
 
 	// yplayermessage - Yellow message to a player
+	void PlayerMessageYellow(const string &in player)
+	{
+		host.Command("yplayermessage", { player });
+	}
+
+	// yplayermessage - Yellow message to a player
 	void PlayerMessageYellow(const string &in player, const string &in message)
 	{
 		host.Command("yplayermessage", { player, message });
+	}
+
+	// dplayermessage - Dark message to a player
+	void PlayerMessageDark(const string &in player)
+	{
+		host.Command("dplayermessage", { player });
 	}
 
 	// dplayermessage - Dark message to a player
@@ -403,9 +529,21 @@ mixin class LegacyCommands
 	}
 
 	// consolemsg - Console message to a player
+	void ConsoleMessage(const string &in player)
+	{
+		host.Command("consolemsg", { player });
+	}
+
+	// consolemsg - Console message to a player
 	void ConsoleMessage(const string &in player, const string &in message)
 	{
 		host.Command("consolemsg", { player, message });
+	}
+
+	// messageall - Message to every player
+	void MessageAll(const string &in color)
+	{
+		host.Command("messageall", { color });
 	}
 
 	// messageall - Message to every player
@@ -415,9 +553,21 @@ mixin class LegacyCommands
 	}
 
 	// helptip - Help tip popup
+	void HelpTip(const string &in player, const string &in tip, const string &in title)
+	{
+		host.Command("helptip", { player, tip, title });
+	}
+
+	// helptip - Help tip popup
 	void HelpTip(const string &in player, const string &in tip, const string &in title, const string &in message)
 	{
 		host.Command("helptip", { player, tip, title, message });
+	}
+
+	// dbg - Debug output (dev builds)
+	void DebugPrint()
+	{
+		host.Command("dbg");
 	}
 
 	// dbg - Debug output (dev builds)
@@ -427,15 +577,33 @@ mixin class LegacyCommands
 	}
 
 	// chatlog - Write to the chat log
+	void ChatLog()
+	{
+		host.Command("chatlog");
+	}
+
+	// chatlog - Write to the chat log
 	void ChatLog(const string &in message)
 	{
 		host.Command("chatlog", { message });
 	}
 
 	// dodamage - `<target|origin> <range|direct> <damage> <hitchance> [type...]`
+	void DoDamage(const string &in target)
+	{
+		host.Command("dodamage", { target });
+	}
+
+	// dodamage - `<target|origin> <range|direct> <damage> <hitchance> [type...]`
 	void DoDamage(const string &in target, const string &in args)
 	{
 		host.Command("dodamage", { target, args });
+	}
+
+	// xdodamage - Extended damage (see ms.stx)
+	void DoDamageEx()
+	{
+		host.Command("xdodamage");
 	}
 
 	// xdodamage - Extended damage (see ms.stx)
@@ -451,15 +619,33 @@ mixin class LegacyCommands
 	}
 
 	// applyeffect - Apply an effect script
+	void ApplyEffect(const string &in target, const string &in effect)
+	{
+		host.Command("applyeffect", { target, effect });
+	}
+
+	// applyeffect - Apply an effect script
 	void ApplyEffect(const string &in target, const string &in effect, const string &in params)
 	{
 		host.Command("applyeffect", { target, effect, params });
 	}
 
 	// givehp - `[entity] <amount>`
+	void GiveHealth()
+	{
+		host.Command("givehp");
+	}
+
+	// givehp - `[entity] <amount>`
 	void GiveHealth(const string &in args)
 	{
 		host.Command("givehp", { args });
+	}
+
+	// givemp - `[entity] <amount>`
+	void GiveMana()
+	{
+		host.Command("givemp");
 	}
 
 	// givemp - `[entity] <amount>`
@@ -487,9 +673,21 @@ mixin class LegacyCommands
 	}
 
 	// attackprop - Item attack property
+	void SetAttackProp(const string &in item, int attack, const string &in prop)
+	{
+		host.Command("attackprop", { item, Text(attack), prop });
+	}
+
+	// attackprop - Item attack property
 	void SetAttackProp(const string &in item, int attack, const string &in prop, const string &in value)
 	{
 		host.Command("attackprop", { item, Text(attack), prop, value });
+	}
+
+	// setstat - Stat / skill value
+	void SetStat(const string &in stat)
+	{
+		host.Command("setstat", { stat });
 	}
 
 	// setstat - Stat / skill value
@@ -499,9 +697,21 @@ mixin class LegacyCommands
 	}
 
 	// createnpc - Spawn an NPC (fires game_dynamically_created)
+	void CreateNpc(const string &in script, const Vector3 &in origin)
+	{
+		host.Command("createnpc", { script, Text(origin) });
+	}
+
+	// createnpc - Spawn an NPC (fires game_dynamically_created)
 	void CreateNpc(const string &in script, const Vector3 &in origin, const string &in params)
 	{
 		host.Command("createnpc", { script, Text(origin), params });
+	}
+
+	// createitem - Spawn an item
+	void CreateItem(const string &in script, const Vector3 &in origin)
+	{
+		host.Command("createitem", { script, Text(origin) });
 	}
 
 	// createitem - Spawn an item
@@ -523,9 +733,21 @@ mixin class LegacyCommands
 	}
 
 	// usetrigger - Fire map triggers
+	void UseTrigger()
+	{
+		host.Command("usetrigger");
+	}
+
+	// usetrigger - Fire map triggers
 	void UseTrigger(const string &in targets)
 	{
 		host.Command("usetrigger", { targets });
+	}
+
+	// addstoreitem - `<store> <item> [quantity cost sellratio bundle]`
+	void AddStoreItem(const string &in store, const string &in item)
+	{
+		host.Command("addstoreitem", { store, item });
 	}
 
 	// addstoreitem - `<store> <item> [quantity cost sellratio bundle]`
@@ -547,9 +769,21 @@ mixin class LegacyCommands
 	}
 
 	// catchspeech - Run <event> when a player says one of the words
+	void CatchSpeech(const string &in event)
+	{
+		host.Command("catchspeech", { event });
+	}
+
+	// catchspeech - Run <event> when a player says one of the words
 	void CatchSpeech(const string &in event, const string &in phrases)
 	{
 		host.Command("catchspeech", { event, phrases });
+	}
+
+	// quest - `set|unset|clear <player> <name> [data]`
+	void Quest(const string &in action, const string &in player)
+	{
+		host.Command("quest", { action, player });
 	}
 
 	// quest - `set|unset|clear <player> <name> [data]`
@@ -559,9 +793,21 @@ mixin class LegacyCommands
 	}
 
 	// servercmd - Run a server console command
+	void ServerCommand()
+	{
+		host.Command("servercmd");
+	}
+
+	// servercmd - Run a server console command
 	void ServerCommand(const string &in command)
 	{
 		host.Command("servercmd", { command });
+	}
+
+	// clientcmd - Run a client console command
+	void ClientCommand(const string &in player)
+	{
+		host.Command("clientcmd", { player });
 	}
 
 	// clientcmd - Run a client console command
@@ -571,8 +817,38 @@ mixin class LegacyCommands
 	}
 
 	// precachefile - Precache another script's resources
+	void PrecacheFile()
+	{
+		host.Command("precachefile");
+	}
+
+	// precachefile - Precache another script's resources
 	void PrecacheFile(const string &in script)
 	{
 		host.Command("precachefile", { script });
+	}
+
+	// playermessage - Message to the item's owner
+	void OwnerMessage()
+	{
+		host.Command("playermessage");
+	}
+
+	// playermessage - Message to the item's owner
+	void OwnerMessage(const string &in message)
+	{
+		host.Command("playermessage", { message });
+	}
+
+	// playermessagecl - Client message to the item's owner
+	void OwnerMessageClient()
+	{
+		host.Command("playermessagecl");
+	}
+
+	// playermessagecl - Client message to the item's owner
+	void OwnerMessageClient(const string &in message)
+	{
+		host.Command("playermessagecl", { message });
 	}
 }

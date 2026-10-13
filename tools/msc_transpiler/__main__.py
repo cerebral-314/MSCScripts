@@ -7,6 +7,9 @@ Usage (run from MSCScripts/tools):
       Regenerates the wrapper files in scripts/angelscript/runtime/ from mapping.py.
   python -m msc_transpiler report [--scripts DIR] [--all | NAME ...]
       Prints the legacy quirks found while converting.
+  python -m msc_transpiler check --as-check EXE --config FILE [--out DIR] [--jobs N]
+      Compiles every converted script under DIR/converted with utils/as_check (in parallel) and
+      summarises the errors. EXE/FILE default to $MSR_AS_CHECK / $MSR_AS_CONFIG.
 
 Defaults: --scripts ../scripts, --out ../scripts/angelscript
 """
@@ -93,6 +96,49 @@ def cmd_report(args) -> int:
     return 0
 
 
+def cmd_check(args) -> int:
+    import collections
+    import os
+    import re
+    import subprocess
+    exe = args.as_check or os.environ.get("MSR_AS_CHECK")
+    config = args.config or os.environ.get("MSR_AS_CONFIG")
+    if not exe or not config:
+        print("check needs --as-check and --config (or MSR_AS_CHECK / MSR_AS_CONFIG)", file=sys.stderr)
+        return 2
+    root = Path(args.out)
+    leaves = sorted(str(p.relative_to(root).as_posix()) for p in (root / "converted").rglob("*.as")
+                    if '[script "' in p.read_text(encoding="latin-1", errors="replace"))
+    jobs = max(1, args.jobs)
+    chunks = [leaves[i::jobs] for i in range(jobs)]
+    procs = []
+    for i, chunk in enumerate(chunks):
+        list_file = root / f".check_{i}.txt"
+        list_file.write_text("\n".join(chunk) + "\n", encoding="utf-8")
+        procs.append(subprocess.Popen([exe, "--config", config, "--root", str(root), "--quiet", "--list", str(list_file)],
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
+    errors: list[str] = []
+    failed = 0
+    for proc in procs:
+        out, _ = proc.communicate()
+        for line in out.splitlines():
+            if ": ERR " in line:
+                errors.append(line)
+            m = re.match(r"as_check: \d+ file\(s\), (\d+) failed", line)
+            if m:
+                failed += int(m.group(1))
+    for i in range(jobs):
+        (root / f".check_{i}.txt").unlink(missing_ok=True)
+    kinds = collections.Counter(re.sub(r"'[A-Za-z0-9_]+::", "'", e.split(": ERR  : ", 1)[-1]) for e in errors)
+    print(f"{len(leaves)} scripts, {len(leaves) - failed} compile, {failed} fail, {len(errors)} errors")
+    for message, count in kinds.most_common(25):
+        print(f"{count:6}  {message}")
+    if args.verbose:
+        for e in sorted(set(errors)):
+            print(e)
+    return 1 if failed else 0
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="msc_transpiler", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -108,8 +154,14 @@ def main(argv: list[str]) -> int:
         p.add_argument("-v", "--verbose", action="store_true")
     p = sub.add_parser("runtime")
     p.add_argument("--out", default=str(DEFAULT_OUT))
+    p = sub.add_parser("check")
+    p.add_argument("--out", default=str(DEFAULT_OUT))
+    p.add_argument("--as-check")
+    p.add_argument("--config")
+    p.add_argument("--jobs", type=int, default=8)
+    p.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
-    return {"convert": cmd_convert, "runtime": cmd_runtime, "report": cmd_report}[args.command](args)
+    return {"convert": cmd_convert, "runtime": cmd_runtime, "report": cmd_report, "check": cmd_check}[args.command](args)
 
 
 if __name__ == "__main__":

@@ -39,9 +39,10 @@ def commands_file() -> str:
              "// .script commands as methods of every converted script (see ScriptEntity).",
              "mixin class LegacyCommands", "{"]
     done: set[tuple[str, int]] = set()
-    for name, spec in mapping.COMMANDS.items():
+    for name, spec in list(mapping.COMMANDS.items()) + list(mapping.ITEM_COMMANDS.items()):
         params = spec.params
-        required = [p for p in params if not p.optional]
+        # a trailing text parameter may always be left out (the handler then gets nothing for it)
+        required = [p for p in params if not p.optional and not (p is params[-1] and p.type == "text")]
         # one overload per number of optional parameters supplied
         for count in range(len(required), len(params) + 1):
             used = params[:count]

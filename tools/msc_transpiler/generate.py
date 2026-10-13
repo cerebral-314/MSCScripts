@@ -44,6 +44,7 @@ class FileInfo:
     declared: dict[str, str] = field(default_factory=dict)       # field name -> initializer source ("" if none)
     declared_const: set[str] = field(default_factory=set)
     called_events: set[str] = field(default_factory=set)
+    handler_names: dict[int, str] = field(default_factory=dict)   # id(Event) -> method name
 
 
 class Project:
@@ -61,7 +62,7 @@ class Project:
         self.inference = Inference()
         for name in self.all_names:
             self.inference.add_file(corpus.parse(name, self.kind_of(name)))
-        self.signatures = SignatureTable(self.inference)
+        self.signatures = SignatureTable(self.inference, sorted(self.inference.event_names))
         self.assigned_anywhere: set[str] = set(self.inference.fields)
         self._infos: dict[str, FileInfo] = {}
         self._loads: dict[str, Load] = {}
@@ -92,7 +93,7 @@ class Project:
     def load(self, leaf: str) -> Load:
         key = normalize(leaf).lower()
         if key not in self._loads:
-            self._loads[key] = load(self.corpus, leaf)
+            self._loads[key] = load(self.corpus, leaf, kind_for=self.kind_of)
         return self._loads[key]
 
     def info(self, name: str) -> FileInfo:
@@ -101,6 +102,13 @@ class Project:
             return self._infos[key]
         parsed = self.corpus.parse(name, self.kind_of(name))
         info = FileInfo(parsed.name, parsed, self.kind_of(name))
+        cls = self.class_of(parsed.name)
+        counts: dict[str, int] = defaultdict(int)
+        for item in parsed.events:
+            if item.name:
+                counts[item.name] += 1
+                n = counts[item.name]
+                info.handler_names[id(item)] = f"{cls}_{self.signatures.get(item.name).method}{'' if n == 1 else f'_{n}'}"
         scope = "shared"
         for item in parsed.items:
             if isinstance(item, ScopeDirective):
@@ -189,7 +197,8 @@ class Project:
         fields = self.visible_fields(name, leaf_closure)
         closure = leaf_closure if leaf_closure is not None else self.closure_files(name)
         dynamic = self.possible_vars(name, closure) - set(fields)
-        return FileContext(self.canonical(name), self.class_of(name), self.inference, fields, dynamic, self.signatures)
+        return FileContext(self.canonical(name), self.class_of(name), self.inference, fields, dynamic,
+                           self.signatures, kind=self.kind_of(name))
 
     # -- output -------------------------------------------------------------------------
 
@@ -248,6 +257,8 @@ class Project:
                 return number_code(expr.text, t)
             if t == BOOL:
                 return "true" if expr.value else "false"
+            if t == VECTOR:
+                return "Vector3()"   # a number read as a vector is (0,0,0)
             return string_literal(raw)
         if isinstance(expr, (Literal,)) or (isinstance(expr, Name) and expr.text not in ctx.fields):
             text = expr.text
@@ -280,9 +291,7 @@ class Project:
                 continue
             if item.name:
                 sig = self.signatures.get(item.name)
-                counts[item.name] += 1
-                suffix = "" if counts[item.name] == 1 else str(counts[item.name])
-                method_name = f"{prefix}{sig.method}{suffix}"
+                method_name = info.handler_names[id(item)]
                 lowerer = HandlerLowerer(ctx, item, sig, method_name)
             else:
                 if not _has_runtime(item):
@@ -400,10 +409,7 @@ class Project:
             ev = le.event
             cls = self.class_of(le.file)
             if ev.name:
-                sig = self.signatures.get(ev.name)
-                file_counters[(le.file, ev.name)] += 1
-                n = file_counters[(le.file, ev.name)]
-                method = f"{cls}_{sig.method}{'' if n == 1 else n}"
+                method = self.info(le.file).handler_names[id(ev)]
                 handlers[ev.name].append((le.file, method))
                 if ev.repeat_delay is not None and _auto_runs(ev):
                     auto_run.append((ev.name, ev.repeat_delay))
@@ -461,13 +467,19 @@ class Project:
         own_rest = [m for m in own_by_name.values()]
         composed = own_rest + composed
 
-        wiring.append(self._on_load(loaded, ctx, timers, auto_run))
-        wiring.append(Method("OnFirstThink", [], "void", [Line(f"{m}()") for m in first_think],
-                             comments=["Unnamed .script blocks: run on the first think after spawn"], qualifiers="override"))
-        wiring.append(self._dispatch(handlers, [m for m, _ in timers]))
+        on_load = self._on_load(loaded, ctx, timers, auto_run)
+        if on_load.body:
+            wiring.append(on_load)
+        if first_think:
+            wiring.append(Method("OnFirstThink", [], "void", [Line(f"{m}()") for m in first_think],
+                                 comments=["Unnamed .script blocks: run on the first think after spawn"],
+                                 qualifiers="override"))
+        if handlers or timers:
+            wiring.append(self._dispatch(handlers, [m for m, _ in timers]))
         get_var, set_var = self._var_access(loaded)
-        wiring.append(get_var)
-        wiring.append(set_var)
+        if len(get_var.body) > 1:
+            wiring.append(get_var)
+            wiring.append(set_var)
         return composed, wiring
 
     def _on_load(self, loaded: Load, ctx: FileContext, timers, auto_run) -> Method:
@@ -490,9 +502,10 @@ class Project:
             args = ", ".join(_param_from_array(t, i) for i, (t, _) in enumerate(sig.params))
             call = f"{sig.method}({args})"
             then: list[Stmt] = [Line(f"Return({call})") if sig.returns == "string" else Line(call), Return("true")]
-            body.append(If(TExpr(f"name == {string_literal(event)}", BOOL, 5), then))
+            body.append(If(TExpr(f"name == {string_literal(event)}", BOOL, 5), then, compact=True))
         for method in timer_methods:
-            body.append(If(TExpr(f"name == {string_literal(method)}", BOOL, 5), [Line(f"{method}()"), Return("true")]))
+            body.append(If(TExpr(f"name == {string_literal(method)}", BOOL, 5), [Line(f"{method}()"), Return("true")],
+                           compact=True))
         body.append(Return("false"))
         return Method("DispatchEvent", [("string", "name"), ("const array<string> &in", "params")], "bool", body,
                       comments=["Events by their .script names (engine, callexternal, timers)"], qualifiers="override")
@@ -510,10 +523,10 @@ class Project:
                 ident = names.variable(var)
                 to_text = ident if t == STRING else f"Text({ident})"
                 get_body.append(If(TExpr(f"name == {string_literal(var)}", BOOL, 5),
-                                   [Line(f"value = {to_text}"), Return("true")]))
+                                   [Line(f"value = {to_text}"), Return("true")], compact=True))
                 from_text = convert(TExpr("value", STRING), t).code
                 set_body.append(If(TExpr(f"name == {string_literal(var)}", BOOL, 5),
-                                   [Line(f"{ident} = {from_text}"), Return("true")]))
+                                   [Line(f"{ident} = {from_text}"), Return("true")], compact=True))
         get_body.append(Return("false"))
         set_body.append(Return("false"))
         get = Method("GetLegacyVar", [("string", "name"), ("string &out", "value")], "bool", get_body,

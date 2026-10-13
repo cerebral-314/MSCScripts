@@ -15,6 +15,7 @@ Locals are typed per event handler; event parameters per event name.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -121,10 +122,12 @@ class Inference:
         self.fields: dict[str, Evidence] = defaultdict(Evidence)
         self.params: dict[tuple[str, int], Evidence] = defaultdict(Evidence)   # (event, n)
         self.param_names: dict[tuple[str, int], dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self.param_doc_names: dict[tuple[str, int], dict[str, int]] = defaultdict(lambda: defaultdict(int))
         self.max_param: dict[str, int] = defaultdict(int)
         self.returns: set[str] = set()      # events whose handlers use `return`
         self.called_as_function: set[str] = set()
         self.globals: set[str] = set()      # setvarg names
+        self.event_names: set[str] = set()
         self._field_types: dict[str, str] | None = None
         self._param_types: dict[tuple[str, int], str] | None = None
 
@@ -132,12 +135,17 @@ class Inference:
 
     def add_file(self, parsed: ParsedFile) -> None:
         for event in parsed.events:
+            if event.name:
+                self.event_names.add(event.name)
             for op in event.load_ops:
                 if op.kind in ("const", "setvar"):
                     self._assign(self.fields[op.name], parse_token(op.value, op.quoted), [])
             local_names: set[str] = set()
             self._collect_locals(event.commands, local_names)
             self._walk(event.name or "", event.commands, local_names)
+            if event.name and event.header_comment:
+                for index, pname in header_param_names(event.header_comment).items():
+                    self.param_doc_names[(event.name, index)][pname] += 1
 
     def _collect_locals(self, cmds: CmdList, names: set[str]) -> None:
         for cmd in cmds.cmds:
@@ -176,6 +184,10 @@ class Inference:
                 if isinstance(sub, Call) and sub.name.lower() == "$func" and sub.args and isinstance(sub.args[0], Name):
                     self.called_as_function.add(sub.args[0].text)
 
+        if name in ("callevent", "calleventloop") and args:
+            for a in args[:2]:
+                if isinstance(a, Name) and not param_index(a.text):
+                    self.event_names.add(a.text)
         if name in ("setvar", "setvard", "setvarg", "local") and args:
             target = cmd.args[0].text
             if name == "setvarg":
@@ -292,6 +304,23 @@ class Inference:
 
     def field_type(self, name: str) -> str:
         return self.field_types().get(name, STRING)
+
+
+_PARAM_DOC = re.compile(r"PARAM(\d+)\s*[=:-]\s*<?([A-Za-z_][\w]*)", re.I)
+_ANGLE = re.compile(r"<([^<>]+)>")
+
+
+def header_param_names(comment: str) -> dict[int, str]:
+    """`//PARAM1 = PlayerId  PARAM2 = ItemID` or `//<owner> <rendermode> <renderamt>`."""
+    found = {int(i): name for i, name in _PARAM_DOC.findall(comment)}
+    if found:
+        return found
+    names_ = {}
+    for i, inner in enumerate(_ANGLE.findall(comment), start=1):
+        word = re.split(r"[^A-Za-z0-9_]", inner.strip())[0]
+        if word and not word[0].isdigit():
+            names_[i] = word
+    return names_
 
 
 def _walk_expr(expr: Expr):

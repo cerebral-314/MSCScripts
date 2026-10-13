@@ -79,6 +79,9 @@ def _body(body: list[Stmt], depth: int, allow_braceless: bool) -> list[str]:
 
 def _emit_if(stmt: If, depth: int, prefix: str) -> list[str]:
     indent = INDENT * depth
+    if stmt.compact and stmt.else_ is None and all(isinstance(s, (Line, Return)) for s in stmt.then):
+        body = " ".join(emit_block([s], 0)[0] for s in stmt.then)
+        return [f"{indent}{prefix}if ({stmt.cond.code}) {{ {body} }}{_trail(stmt)}"]
     # braceless only when every branch of the chain is a single simple statement
     chain_simple = _chain_is_simple(stmt)
     lines = [f"{indent}{prefix}if ({stmt.cond.code}){_trail(stmt)}"]
@@ -113,7 +116,10 @@ def emit_method(method: Method, depth: int = 1) -> list[str]:
     qualifiers = f" {method.qualifiers}" if method.qualifiers else ""
     lines.append(f"{indent}{method.returns} {method.name}({params}){qualifiers}")
     lines.append(f"{indent}{{")
-    lines.extend(emit_block(simplify(method.body), depth + 1))
+    body = simplify(method.body)
+    while method.returns == "void" and body and isinstance(body[-1], Return) and body[-1].value is None             and not body[-1].comments and not body[-1].trailing:
+        body = body[:-1]
+    lines.extend(emit_block(body, depth + 1))
     lines.append(f"{indent}}}")
     return lines
 

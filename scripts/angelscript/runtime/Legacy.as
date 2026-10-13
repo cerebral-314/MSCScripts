@@ -185,3 +185,9 @@ string AppendResult(const string &in result, const string &in value)
 {
 	return result.isEmpty() ? value : result + ";" + value;
 }
+
+// vectormultiply <var> <vector>: multiplies component by component
+Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)
+{
+	return Vector3(value.x * factors.x, value.y * factors.y, value.z * factors.z);
+}

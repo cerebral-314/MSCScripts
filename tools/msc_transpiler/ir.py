@@ -40,6 +40,7 @@ class If(Stmt):
     cond: TExpr
     then: list[Stmt]
     else_: list[Stmt] | None = None
+    compact: bool = False       # print as one line: if (cond) { a; b; }
 
 
 @dataclass
