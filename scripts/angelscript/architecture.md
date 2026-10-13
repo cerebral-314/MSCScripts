@@ -1,496 +1,189 @@
-# Master Sword Rebirth AngelScript Architecture
-
-## Table of Contents
-1. [System Overview](#system-overview)
-2. [Core Systems](#core-systems)
-3. [Game Mechanics](#game-mechanics)
-4. [Administrative Tools](#administrative-tools)
-5. [Testing Framework](#testing-framework)
-6. [File Organization](#file-organization)
-7. [Integration Points](#integration-points)
-8. [Development Workflow](#development-workflow)
-
-## System Overview
-
-Master Sword Rebirth utilizes AngelScript as its primary scripting engine for game logic, providing a powerful and flexible system for implementing game mechanics, administrative tools, and dynamic content. The AngelScript system is organized into several interconnected modules that work together to create a comprehensive game experience.
-
-### Key Features
-- **Modular Architecture**: Systems are separated into logical modules with clear interfaces
-- **Event-Driven Design**: Uses event handlers and callbacks for system communication
-- **Namespace Organization**: All systems are properly namespaced under `MS::`
-- **Comprehensive Testing**: Full test suite with stress testing capabilities
-- **Hot-Reload Support**: Scripts support pak file integration with include directives
-- **Administrative Interface**: Complete admin command system with privilege levels
-
-## Core Systems
-
-### GameMaster System (`gamemaster/`)
-
-The GameMaster system serves as the central coordinator for all server-wide game logic and events.
-
-#### Key Components:
-- **GameMaster.as** - Main coordinator class handling global events
-- **GameMasterInit.as** - Initialization and engine integration
-- **GameMasterData.as** - Data structures and constants
-- **GameMasterUtils.as** - Utility functions
-- **GameMasterEvents.as** - Event system interfaces
-- **GameMasterSimple.as** - Simplified standalone version for testing
-
-#### Purpose:
-- Manages server-wide game state
-- Coordinates between different game systems
-- Handles player connection/disconnection events
-- Manages monster death and treasure spawning
-- Provides gold spew effects and delayed NPC creation
-- Integrates with advanced trigger systems
-
-#### Engine Integration Points:
-```cpp
-// Called by C++ engine
-void game_spawn()             // Legacy compatibility
-```
-
-### Player Management System (`player/`)
-
-Handles all player-related functionality including admin privileges and statistics tracking.
-
-#### Key Components:
-- **PlayerManager.as** - Core player tracking and admin system
-- **QuestItemIntegration.as** - Quest item handling
-- **QuestTracker.as** - Quest progress tracking
-
-#### Purpose:
-- Track player connections and statistics
-- Manage admin privilege system with configurable permissions
-- Handle developer mode functionality
-- Integrate with quest system for item management
-- Provide player state synchronization
-
-#### Admin Privilege Levels:
-- `standard_rcon_cvar_` - Full administrative access
-- `standard_cvar_` - Server configuration access
-- `standard_` - Basic moderation commands
-
-### World System (`world/`)
-
-Manages environmental effects, dynamic lighting, and world state.
-
-#### Key Components:
-- **WorldSystem.as** - Environmental effects and lighting manager
-- **SpawnSystem.as** - Entity spawning coordination
-- **TreasureManager.as** - Treasure spawning and anti-farming
-- **EntitySpawner.as** - Advanced entity creation
-- **CriticalNPCManager.as** - Essential NPC management
-
-#### Purpose:
-- Dynamic lighting system with 16 configurable light slots
-- Weather transitions and environmental effects
-- Time-based ambient lighting (dawn, day, dusk, night)
-- Wind effects and atmospheric changes
-- Critical NPC tracking and respawn management
-- Treasure spawning with anti-farming protection
-
-#### Lighting System Features:
-- 16 concurrent dynamic lights
-- Per-entity light registration
-- Color and radius customization
-- Automatic cleanup and slot management
-
-## Game Mechanics
-
-### Magic System (`magic/`)
-
-Comprehensive spell casting system with advanced features.
-
-#### Key Components:
-- **MagicSystem.as** - Core magic system manager
-- **SpellRegistry.as** - Spell registration and player spell tracking
-- **TestPotionOfForgetfulness.as** - Spell forgetting mechanics
-- **MagicCombatTest.as** - Combat integration testing
-
-#### Purpose:
-- Spell registration and categorization (3 tiers of magic hand spells)
-- Player spell learning and cooldown management
-- Potion of Forgetfulness system for spell management
-- Integration with combat system for damage calculation
-- Magic hand spell categories with 34+ unique spells
-
-#### Magic Hand Categories:
-1. **Basic Combat Magic** (11 spells) - Fire ball, frost bolt, healing circle, etc.
-2. **Advanced Combat Magic** (10 spells) - Lightning storm, poison cloud, summons, etc.
-3. **Master Level Magic** (3 spells) - Volcano, turn undead, summon undead
-
-#### Potion of Forgetfulness Features:
-- Interactive menu system for spell selection
-- Confirmation dialogs with screen fade effects
-- Integration with admin commands for testing
-- Player-specific spell tracking and management
-
-### Combat System (`combat/`)
-
-Advanced damage calculation and combat mechanics.
-
-#### Key Components:
-- **CombatSystem.as** - Core combat mechanics and damage processing
-
-#### Purpose:
-- Damage type system (physical, elemental, magic)
-- Status effect management (poison, burn, freeze, etc.)
-- Resistance and armor calculations
-- Critical hit system with configurable multipliers
-- Combat statistics tracking per player
-- Integration with spell damage from magic system
-
-#### Damage Types:
-- Physical: Slash, Pierce, Blunt
-- Elemental: Fire, Cold, Lightning, Poison, Acid
-- Magical: Holy, Dark, Magic
-
-#### Status Effects:
-- Damage over Time: Poison, Burn
-- Movement: Freeze, Slow, Haste
-- Combat: Weaken, Strength, Shield
-- Utility: Blind, Regeneration, Curse
-
-### Trigger Systems (`triggers/`)
-
-Advanced condition-based event triggering.
-
-#### Key Components:
-- **AdvancedTriggerSystem.as** - Complex condition parsing and evaluation
-- **HPSequenceTrigger.as** - Health-based encounter triggers
-- **TriggerSystemExample.as** - Usage examples and demonstrations
-
-#### Purpose:
-- Dynamic encounter scaling based on party composition
-- Complex condition parsing with logical operators
-- Party analysis (HP, race, class, allegiance)
-- HP-based sequence triggers for boss encounters
-- Integration with admin commands for testing
-
-#### Trigger Filter Examples:
-```
-"totalhp>500&nplayers<4|race=human"  // High HP party or human players
-"minlevel>10&hasclass=warrior"       // High level with warrior present
-"!isenemy&avghp>75"                  // Allied party with good health
-```
-
-## Administrative Tools
-
-### Admin System (`admin/`)
-
-Comprehensive administrative interface with privilege-based command system.
-
-#### Key Components:
-- **AdminSystem.as** - Main admin command processor
-- **CallExternalBridge.as** - External API integration
-- **EntityCommunicationSystem.as** - Entity communication framework
-
-#### Admin Command Categories:
-
-**Spawn Management:**
-- `addspawn` - Add spawn points at current location
-- `listspawns` - Display all configured spawn points
-- `testspawn <index>` - Teleport to specific spawn point
-- `clearspawns` - Remove all spawn points (requires rcon)
-
-**Player Management:**
-- `kick <player> [reason]` - Kick player from server
-- `ban <player> [duration] [reason]` - Ban player (requires rcon)
-- `listplayers` - Show all connected players with admin status
-
-**Developer Tools:**
-- `devmode <on|off>` - Toggle developer mode (requires rcon)
-- `setdev [player]` - Set developer player
-- `testpotion` - Test Potion of Forgetfulness system
-
-**Critical NPC Management:**
-- `critnpc <list|register|remove|reset>` - Manage critical NPCs
-- `respawnnpc <name> [x] [y] [z]` - Respawn critical NPC
-- `npcstatus [clear]` - Display NPC status and death history
-
-**Trigger System:**
-- `testtrigger <filter>` - Test trigger filter conditions
-- `createhpseq <name> [radius]` - Create HP sequence trigger
-- `resethpseq <index|all>` - Reset HP sequence triggers
-- `partyinfo` - Display detailed party analysis
-
-**Magic System:**
-- `testpotion` - Test Potion of Forgetfulness (dev only)
-- `forgetspell <number>` - Select spell for forgetting
-- `confirmforget` - Confirm spell forgetting
-- `cancelforget` - Cancel spell forgetting process
-- `listspells` - List learned spells (dev only)
-- `learnspell <script>` - Learn specific spell (dev only)
-
-**Treasure System:**
-- `treasurestatus` - Display treasure system status
-- `scrambletreasure` - Randomize all treasure lists
-- `addtreasurespawn [x] [y] [z] [difficulty] [respawn_time]` - Add treasure spawn
-- `respawntreasures` - Force respawn all treasures
-- `clearfarmdata [player]` - Clear anti-farming data
-- `generatetreasure [x] [y] [z] [difficulty]` - Generate treasure at location
-
-**Utility Commands:**
-- `teleport <x> <y> <z>` or `tp <player>` - Teleport functionality
-- `god` - Toggle god mode (requires cvar privileges)
-- `noclip` - Toggle noclip mode (requires cvar privileges)
-- `give <player> <item> [amount]` - Give items to players
-- `spawn <entity>` - Spawn entities
-- `reload` - Reload server configuration
-- `status` - Display server status
-- `help [command]` - Display available commands
-
-### Privilege System
-
-Admin privileges are hierarchical and configurable:
-
-- **rcon** - Full server control (ban, server config, critical systems)
-- **cvar** - Server variable modification (game balance, spawning)
-- **standard** - Basic moderation (kick, NPC management, triggers)
-
-## Testing Framework
-
-### Comprehensive Test Suite (`tests/`)
-
-The testing framework provides extensive validation of all AngelScript systems.
-
-#### Key Components:
-- **MasterTestSuite.as** - Test coordinator and runner
-- **EngineIntegrationTests.as** - Engine API validation
-- **QuestSystemTests.as** - Quest system validation
-- **NPCManagerTests.as** - NPC system testing
-- **CommunicationTests.as** - Inter-system communication testing
-- **PlayerManagementTests.as** - Player system validation
-- **PerformanceTests.as** - Load testing and optimization
-- **TestUtilities.as** - Common testing utilities
-
-#### Test Categories:
-
-**Comprehensive Testing:**
-```cpp
-RunAllAngelScriptTests()     // Full system validation
-RunStressTests()             // Production readiness testing
-RunRegressionTests()         // Previously failing scenarios
-```
-
-**Individual System Testing:**
-```cpp
-RunEngineTests()             // Engine integration
-RunQuestTests()              // Quest system
-RunNPCTests()                // NPC management
-RunTriggerTests()            // Trigger systems
-RunCommunicationTests()      // System communication
-RunPlayerTests()             // Player management
-RunPerformanceTests()        // Performance validation
-```
-
-**Quick Validation:**
-```cpp
-RunQuickValidation()         // Essential systems only
-```
-
-#### Test Features:
-- Automated test execution with detailed reporting
-- Stress testing for production readiness assessment
-- Performance benchmarking and memory pressure testing
-- Success rate calculation and quality assessment
-- Individual test result tracking with timing information
-
-## File Organization
+# MSCScripts AngelScript - Layout and Engine Integration
+
+> **Status.** AngelScript is **not** the game's active scripting engine. The game runs the legacy
+> `.script` files. The AngelScript runtime is compiled into the Master Sword Rebirth DLLs but is
+> disabled unless they are built with `-DMSR_ANGELSCRIPT=ON` (otherwise `AS_DISABLED` is defined and
+> nothing in this folder is loaded). The scripts here are work in progress and have not been
+> exercised as a whole. Verified against the engine source and this tree on 2026-10-13.
+
+Engine-side references (MasterSwordRebirth repo):
+
+- `ANGELSCRIPT_API_REFERENCE.md` - what the engine registers, script entry points, engine events
+- `docs/ANGELSCRIPT_API_SERVER.md`, `docs/ANGELSCRIPT_API_CLIENT.md` - server / client API
+- `docs/ANGELSCRIPT_CONTEXT_SYSTEM.md` - `#pragma context`, module discovery, `#include` rules
+- `utils/as_check` - compiles these files offline against the dumped server interface
+
+---
+
+## How the engine loads this folder
+
+1. **Discovery.** The engine enumerates every `.as` file in the script pak and keeps only files that
+   contain `module Name {`. Today that is exactly one file: `server/gamemaster/GameMaster.as`
+   (`module GameMaster`). The `*.example` and `*.disabled` files are not `.as` files and are ignored.
+2. **Includes.** `#include "x/y.as"` is resolved as `angelscript/x/y.as` inside the pak. Everything
+   `GameMaster.as` includes, directly or indirectly, is compiled into the `GameMaster` module:
+
+   ```
+   server/gamemaster/GameMaster.as
+     server/gamemaster/GameMasterDataStructures.as
+     server/gamemaster/GameMasterUtils.as
+     server/gamemaster/GameMasterEvents.as
+     server/gamemaster/GameMasterVoting.as
+       shared/Scheduler.as
+     server/gamemaster/GameMasterMapTransitions.as
+     server/gamemaster/GameMasterPlayerCommands.as
+   ```
+3. **Everything else is never loaded**: `admin/`, `combat/`, `commands/`, `magic/`, `player/`,
+   `triggers/`, `world/`, `tests/`, `GameMasterTest.as` and `client/VoteMenuClient.as` have no
+   `module` declaration and are not included by `GameMaster.as`. Calling into them from the loaded
+   set is not possible; a function defined only there does not exist at runtime.
+4. **Context.** Every file starts with `#pragma context server|client|shared`, matching its
+   directory. The server loads `server` and `shared` modules, the client `client` and `shared`
+   modules. Any other `#pragma` fails the build of the module.
+
+Known include error (only matters if the file is ever loaded): `server/magic/SpellRegistry.as`
+includes `server/GameMasterUtils.as`; the file is `server/gamemaster/GameMasterUtils.as`.
+
+---
+
+## Directory layout
 
 ```
-MSCScripts/scripts/angelscript/
-├── gamemaster/                 # Core game coordination
-│   ├── GameMaster.as          # Main coordinator
-│   ├── GameMasterInit.as      # Initialization
-│   ├── GameMasterData.as      # Data structures
-│   ├── GameMasterUtils.as     # Utilities
-│   ├── GameMasterEvents.as    # Event system
-│   ├── GameMasterSimple.as    # Testing version
-│   └── GameMasterTest.as      # Unit tests
-├── player/                     # Player management
-│   ├── PlayerManager.as       # Core player system
-│   ├── QuestItemIntegration.as# Quest integration
-│   └── QuestTracker.as        # Quest tracking
-├── world/                      # World systems
-│   ├── WorldSystem.as         # Environment/lighting
-│   ├── SpawnSystem.as         # Entity spawning
-│   ├── TreasureManager.as     # Treasure system
-│   ├── EntitySpawner.as       # Advanced spawning
-│   └── CriticalNPCManager.as  # Critical NPCs
-├── magic/                      # Magic system
-│   ├── MagicSystem.as         # Core magic
-│   ├── SpellRegistry.as       # Spell management
-│   ├── TestPotionOfForgetfulness.as
-│   └── MagicCombatTest.as     # Combat integration
-├── combat/                     # Combat mechanics
-│   └── CombatSystem.as        # Damage/status effects
-├── triggers/                   # Trigger systems
-│   ├── AdvancedTriggerSystem.as # Complex conditions
-│   ├── HPSequenceTrigger.as   # HP-based triggers
-│   └── TriggerSystemExample.as# Usage examples
-├── admin/                      # Administrative tools
-│   ├── AdminSystem.as         # Command processor
-│   ├── CallExternalBridge.as  # External APIs
-│   ├── EntityCommunicationSystem.as
-│   └── EntityCommunicationInit.as
-└── tests/                      # Testing framework
-    ├── MasterTestSuite.as     # Test coordinator
-    ├── EngineIntegrationTests.as
-    ├── QuestSystemTests.as
-    ├── NPCManagerTests.as
-    ├── CommunicationTests.as
-    ├── PlayerManagementTests.as
-    ├── PerformanceTests.as
-    └── TestUtilities.as
-
-Root Level Test Files:
-├── test_angelscript_simple.as  # Basic AngelScript test
-├── test_include_test.as        # Include functionality test
-└── test_common.as             # Common test functions
+scripts/angelscript/
+|-- architecture.md                       this file
+|-- client/
+|   |-- VoteMenuClient.as                 placeholder vote-menu class (namespace MSClient); not loaded
+|   |-- client_module.example             template: client module
+|   |-- vgui_test_interactive.disabled    VGUI test module (disabled)
+|   `-- vgui_test_suite.disabled          VGUI tests (disabled)
+|-- shared/
+|   |-- Scheduler.as                      delayed-task scheduler (MS::SchedulerManager); loaded via GameMasterVoting.as
+|   `-- shared_module.example             template: shared module
+`-- server/
+    |-- server_module.example             template: server module
+    |-- gamemaster/                       LOADED (module GameMaster and its includes)
+    |   |-- GameMaster.as                 module GameMaster + global entry points
+    |   |-- GameMasterDataStructures.as   vote/transition data types, enums (MS::)
+    |   |-- GameMasterUtils.as            helpers (MS::GetPlayerByIndex, MS::ToLower, MS::Split, ...)
+    |   |-- GameMasterEvents.as           event interfaces and data
+    |   |-- GameMasterVoting.as           vote manager
+    |   |-- GameMasterMapTransitions.as   map transitions + global transition entry points
+    |   |-- GameMasterPlayerCommands.as   chat/vote command handling
+    |   `-- GameMasterTest.as             structure test; not loaded
+    |-- admin/                            not loaded
+    |   |-- AdminSystem.as                admin commands and developer tools
+    |   |-- CallExternalBridge.as         legacy callexternal translation layer
+    |   |-- EntityCommunicationInit.as    init helper for the communication system
+    |   `-- EntityCommunicationSystem.as  entity <-> game master messaging
+    |-- combat/CombatSystem.as            damage/status-effect tracking; not loaded
+    |-- commands/                         not loaded
+    |   |-- CommandModule.as              command processing entry
+    |   |-- CommandRegistry.as            command registration and dispatch
+    |   `-- VotingCommands.as             votemap / votepvp / votelock handlers
+    |-- magic/                            not loaded
+    |   |-- MagicSystem.as, SpellRegistry.as
+    |   `-- MagicCombatTest.as, TestPotionOfForgetfulness.as
+    |-- player/                           not loaded
+    |   |-- PlayerManager.as              player tracking, admin checks
+    |   |-- QuestTracker.as, QuestItemIntegration.as
+    |-- triggers/                         not loaded
+    |   |-- AdvancedTriggerSystem.as, HPSequenceTrigger.as
+    |   `-- TriggerSystemExample.as, TriggerSystemTests.as
+    |-- world/                            not loaded
+    |   |-- WorldSystem.as                lighting/weather state (script-side only)
+    |   |-- SpawnSystem.as, EntitySpawner.as, CriticalNPCManager.as, TreasureManager.as
+    |   `-- README_QuestItems.md
+    `-- tests/                            not loaded
+        |-- MasterTestSuite.as, TestUtilities.as
+        |-- CommunicationTests.as, EngineIntegrationTests.as, NPCManagerTests.as,
+        |   PerformanceTests.as, PlayerManagementTests.as, QuestSystemTests.as
+        `-- test_engine_events.as, test_player_iteration.as, test_quest_system.as
 ```
 
-## Integration Points
+Most files declare their code in `namespace MS` (tests use `MSTest`, the trigger system
+`AdvancedTriggerSystem`, the client file `MSClient`).
 
-### Engine to AngelScript
+---
 
-The C++ engine integrates with AngelScript through several key interfaces:
+## Engine integration (loaded set)
 
-#### Core Engine Functions (provided by C++):
-```cpp
-// Entity Management
-CBasePlayer@ GetPlayerByIndex(int index)
+### Entry points the engine calls
+
+| Function | Defined in | Engine caller |
+|---|---|---|
+| `ServerActivate()` | `GameMaster.as` | Server activation when no game_master exists: spawns `game_master` with `SpawnNPC(..., Angel)`, sets netname `-game_master`, creates the `GameMaster` instance |
+| `game_spawn()` | `GameMaster.as` | Map start (also reached once more through the legacy-event bridge) |
+| `GameThink()` | `GameMaster.as` | Every frame for each player (`CBasePlayer::PostThink`) |
+| `GameTransitionTriggered(...)`, `ExecuteManualMapChange(...)`, `GameTriggered(...)`, `OnPlayerTransitionEntered(...)` | `GameMasterMapTransitions.as` (global wrappers around `MS::` versions) | Map transition entities and target fires |
+| `GameMaster_Initialize()` | generated by the module system | After the module is built |
+
+Not implemented anywhere in this tree: `GamePlayerPutInWorld`, `OnPlayerTransitionExited`,
+`OnPlayerMapChange`, `OnPlayerCharacterLoaded` (the engine calls them only if they exist).
+
+### Engine events
+
+The `GameMaster` constructor calls `RegisterGameMasterEngineEvents()`, which registers global
+handlers with `RegisterEngineEvent`: `OnEnginePlayerConnect`, `OnEnginePlayerDisconnect`,
+`OnEngineMonsterKilled`, `OnEngineTreasureSpawned`, `OnEnginePlayerSayText`. It also tries
+`RegisterEngineEvent("TestSimpleFunction", ...)`, which the engine rejects (not an event name).
+
+### Engine functions used
+
+Use the names the engine registers (see the API reference), for example:
+
+```angelscript
+// players
 array<CBasePlayer@>@ GetAllPlayers()
-int GetPlayerCount()
+int          GetPlayerCount()
+CBasePlayer@ PlayerByIndex(int index)              // entity index 1..maxClients
+CBasePlayer@ PlayerBySteamID(const string &in)
+string       GetPlayerAuthId(CBasePlayer@)
 
-// Server Functions
-string GetCvar(const string &in name)
+// game state (server only)
+string GetCvar(const string &in)
 string GetMapName()
-float GetGameTime()
+float  GetGameTime()
 string GetTimestamp()
 
-// Event Registration
-void RegisterEngineEvent(const string &in eventName, function@ callback)
-
-// Logging
-void LogMessage(const string &in message)
-void DeveloperMessage(int level, const string &in message)
-
-// Math/Utility
-float Random(float min, float max)
-int RandomInt(int min, int max)
-Vector3 CreateVector(float x, float y, float z)
+// events, logging, misc
+void RegisterEngineEvent(const string &in eventName, ?&in handler)   // pass a global function
+void LogMessage(const string &in)
+void DeveloperMessage(int level, const string &in)
+float Random(float, float)
+int   RandomInt(int, int)
+Vector3 CreateVector(float, float, float)
+void ExecuteServerCommand(const string &in)
+bool EngineMapExists(const string &in)
 ```
 
-#### AngelScript to Engine Events:
-```cpp
-// Map Lifecycle
-void game_spawn()               // Legacy compatibility
+`GetPlayerByIndex`, `ToLower`, `ToUpper` and `Split` used by the GameMaster files are **script
+helpers** in `GameMasterUtils.as` (`MS::GetPlayerByIndex` returns the n-th entry of
+`GetAllPlayers()`, not the player with entity index n). Likewise `LogInfo`/`LogWarning`/`LogError`
+are methods of individual script classes, not engine functions.
 
-// Player Events
-void OnEnginePlayerConnect(const string &in name, const string &in steamID)
-void OnEnginePlayerDisconnect(const string &in name, const string &in steamID)
+### Engine features that do not exist
 
-// Game Events
-void OnEngineMonsterKilled(const string &in monster, const string &in killer, const Vector3 &in pos)
-void OnEngineTreasureSpawned(const string &in type, const Vector3 &in pos)
-```
+Several files were written against APIs the engine does not provide. Check these before relying
+on them:
 
-### Pak File Integration
+- **No per-entity AngelScript.** Nothing attaches an `.as` file to a monster, item or player;
+  `class X : CGameScript` does not compile.
+- **No delays inside coroutines.** `DelaySeconds`/`YieldFrame` are no-ops; time-based work has to
+  be driven from `GameThink` (as `shared/Scheduler.as` does).
+- **`ImportModule` does nothing**; modules cannot call each other.
+- **No hot-reload of individual files.** `as_reload_scripts` / `ReloadAllScriptModules()` re-read the
+  whole script pak and rebuild every module; module-level state is lost.
+- The engine's `InitializeAdvancedTriggerSystem()`, `InitializeEntitySpawner()` etc. (called from the
+  `GameMaster` constructor) only toggle C++ flags.
 
-The system supports pak file integration for script modularity:
+---
 
-```cpp
-#include "server/gamemaster/GameMasterData.as"
-#include "server/magic/SpellRegistry.as"
-#include "server/combat/CombatSystem.as"
-```
+## Development notes
 
-This allows for:
-- Modular script development
-- Hot-reloading of script changes
-- Proper dependency management
-- Namespace organization
-
-### Error Handling and Validation
-
-The system includes comprehensive error handling:
-
-#### Environment Validation:
-- Engine API availability checking
-- Namespace conflict detection
-- Include dependency validation
-- System initialization verification
-
-#### Runtime Error Handling:
-- Null pointer checking for all entity operations
-- Parameter validation for all public functions
-- Graceful degradation when systems are unavailable
-- Comprehensive logging for debugging
-
-## Development Workflow
-
-### Setting Up Development Environment
-
-1. **AngelScript Integration**: Ensure the C++ engine has AngelScript properly integrated
-2. **Pak File Support**: Configure pak file loading for include directives
-3. **Logging System**: Set up engine logging integration for script debugging
-4. **Test Environment**: Initialize the testing framework for validation
-
-### Development Process
-
-1. **System Design**: Plan new features within the existing namespace structure
-2. **Implementation**: Develop in the appropriate module directory
-3. **Testing**: Use the comprehensive test suite for validation
-4. **Integration**: Test with other systems using the trigger and event systems
-5. **Documentation**: Update this architecture document as needed
-
-### Testing Strategy
-
-#### Development Testing:
-```cpp
-InitializeTestSuite()        // Initialize test framework
-RunQuickValidation()         // Fast development testing
-RunEngineTests()            // Test specific systems
-```
-
-#### Pre-Production Testing:
-```cpp
-RunAllAngelScriptTests()     // Comprehensive validation
-RunStressTests()             // Load testing
-RunRegressionTests()         // Stability verification
-```
-
-#### Production Monitoring:
-- Monitor script performance through the testing framework
-- Use admin commands for live debugging
-- Leverage the comprehensive logging system for issue tracking
-
-### Best Practices
-
-1. **Namespace Usage**: Always use the `MS::` namespace for game systems
-2. **Error Handling**: Check for null entities and invalid parameters
-3. **Logging**: Use appropriate log levels (Info, Warning, Error, Debug)
-4. **Testing**: Write tests for all new functionality
-5. **Documentation**: Update comments and architecture documentation
-6. **Integration**: Use the event system for inter-system communication
-7. **Performance**: Leverage caching systems where appropriate (e.g., party analysis cache)
-
-### Debugging Tools
-
-#### Admin Commands for Debugging:
-- `devmode on` - Enable detailed logging and developer features
-- `status` - Check system health and statistics
-- `partyinfo` - Analyze current party composition for trigger testing
-- `testtrigger` - Test trigger filter conditions
-- `npcstatus` - Check critical NPC states
-- `treasurestatus` - Verify treasure system operation
-
-#### Test Framework for Validation:
-- Individual system test runners for focused debugging
-- Performance tests for optimization
-- Stress tests for load validation
-- Comprehensive reporting for issue identification
-
-This architecture provides a robust, scalable, and maintainable foundation for Master Sword Rebirth's scripting system, enabling rich gameplay experiences while maintaining code quality and system reliability.
+- Keep `#pragma context` as the first line of every file; it is the only `#pragma` allowed.
+- A new top-level system must either declare `module Name { ... }` (and then gets its own isolated
+  module, `g_Name` and `Name_Initialize()`), or be `#include`d from `GameMaster.as`.
+- Global functions the engine calls by name (entry points, event handlers, VGUI callbacks) must not
+  be overloaded.
+- Compile-check changes with `utils/as_check` against `utils/as_check/config/as_config_server.txt`
+  before testing in game.
