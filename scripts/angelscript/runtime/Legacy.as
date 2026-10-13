@@ -191,3 +191,17 @@ Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)
 {
 	return Vector3(value.x * factors.x, value.y * factors.y, value.z * factors.z);
 }
+
+// ---- Menus ----------------------------------------------------------------------------------
+
+// The reg.mitem.* values that menuitem.register reads (see RegisterMenuItem)
+class MenuItem
+{
+	string id;
+	string title;
+	string type;       // callback, disabled, ...
+	string data;       // passed to the callback
+	string callback;   // event run when the item is chosen
+	string cb_failed;  // event run when it can't be chosen
+	string priority;
+}

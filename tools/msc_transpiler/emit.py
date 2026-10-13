@@ -5,14 +5,27 @@ single-statement bodies.
 
 from __future__ import annotations
 
-from .ir import AND, Blank, Comment, For, If, Line, Method, Return, Stmt, TExpr
+from .ir import AND, Append, Blank, Comment, For, If, Line, Method, Return, Stmt, TExpr
 
 INDENT = "\t"
 
 
-def simplify(stmts: list[Stmt]) -> list[Stmt]:
+def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
+    from .lower import join
     out: list[Stmt] = []
     for stmt in stmts:
+        prev = out[-1] if out else None
+        if isinstance(stmt, Append) and isinstance(prev, Append) and prev.target == stmt.target                 and not stmt.comments and not prev.trailing:
+            first = prev.value if prev.value.type == "string" else join([prev.value])
+            out[-1] = Append(prev.target, join([first, stmt.value]), comments=prev.comments, trailing=stmt.trailing)
+        else:
+            out.append(stmt)
+    return out
+
+
+def simplify(stmts: list[Stmt]) -> list[Stmt]:
+    out: list[Stmt] = []
+    for stmt in _merge_appends(stmts):
         if isinstance(stmt, If):
             stmt.then = simplify(stmt.then)
             if stmt.else_ is not None:
@@ -33,8 +46,9 @@ def simplify(stmts: list[Stmt]) -> list[Stmt]:
 
 
 def _is_simple(stmts: list[Stmt]) -> bool:
-    return (len(stmts) == 1 and isinstance(stmts[0], (Line, Return))
-            and not stmts[0].comments and not stmts[0].trailing)
+    return (len(stmts) == 1 and isinstance(stmts[0], (Line, Return, Append))
+            and not stmts[0].comments and not stmts[0].trailing
+            and not (isinstance(stmts[0], Line) and stmts[0].declares))
 
 
 def _comment_lines(comments: list[str], indent: str) -> list[str]:
@@ -50,7 +64,11 @@ def emit_block(stmts: list[Stmt], depth: int) -> list[str]:
     indent = INDENT * depth
     for stmt in stmts:
         lines.extend(_comment_lines(stmt.comments, indent))
-        if isinstance(stmt, Line):
+        if isinstance(stmt, Append):
+            # string += accepts numbers directly; bools and vectors need .script's text form
+            value = stmt.value.code if stmt.value.type in ("string", "int", "float") else f"Text({stmt.value.code})"
+            lines.append(f"{indent}{stmt.target} += {value};{_trail(stmt)}")
+        elif isinstance(stmt, Line):
             lines.append(f"{indent}{stmt.code};{_trail(stmt)}" if not stmt.code.endswith("}") else f"{indent}{stmt.code}{_trail(stmt)}")
         elif isinstance(stmt, Return):
             lines.append(f"{indent}return{' ' + stmt.value if stmt.value else ''};{_trail(stmt)}")

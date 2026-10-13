@@ -108,7 +108,10 @@ def call_type(call: Call) -> str:
         if prop in mapping.GET_PROPERTIES_ARG:
             t = mapping.GET_PROPERTIES_ARG[prop][1]
             return STRING if t == "entity" else t
-        if prop.startswith("origin.") or prop.startswith("angles.") or prop.startswith("velocity."):
+        base, _, component = prop.partition(".")
+        if component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
+            return FLOAT
+        if any(prop.startswith(p) for p in mapping.GET_PREFIXED):
             return FLOAT
     if name in ("$math", "$randf", "$float", "$min", "$max", "$ratio", "$get_skill_ratio"):
         return FLOAT

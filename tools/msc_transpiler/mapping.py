@@ -147,12 +147,67 @@ COMMANDS: dict[str, CommandSpec] = {
     "servercmd": CommandSpec("ServerCommand", P("text command"), "Run a server console command"),
     "clientcmd": CommandSpec("ClientCommand", P("entity player, text command"), "Run a client console command"),
     "precachefile": CommandSpec("PrecacheFile", P("text script"), "Precache another script's resources"),
+    # --- effects (multi-format commands keep their arguments as text) ---------------------------
+    "cleffect": CommandSpec("ClientEffect", P("text args"), "Client effect (see Scripting_AllDocs.txt)"),
+    "clientevent": CommandSpec("ClientEvent", P("string action, entity target, text args"),
+                               "new|update|persist|remove <target|all> <script|id> [event] [params]"),
+    "effect": CommandSpec("Effect", P("text args"), "Server-side effect: beam, tempent, screenshake, screenfade, glow, decal"),
+    "clearfx": CommandSpec("ClearEffects", P(""), "Remove every applied effect"),
+    "setenv": CommandSpec("SetEnvironment", P("string prop, text value"), "World environment (client)"),
+    "sound.play3d": CommandSpec("PlaySound3D", P("string sound, float volume, Vector3 origin, text args"),
+                                "<sound> <volume> <origin> [attenuation] [channel] [pitch]"),
+    "playmp3": CommandSpec("PlayMusic", P("entity player, string mode, text file"), "<player|all> <system|combat|stop> <file>"),
+    "hud.addstatusicon": CommandSpec("AddStatusIcon", P("entity player, text args"), "<icon> <name> <duration> [tga]"),
+    # --- NPC behaviour ----------------------------------------------------------------------------
+    "saytextrange": CommandSpec("SetSayTextRange", P("text range"), "Range at which speech is heard (or default)"),
+    "tossprojectile": CommandSpec("TossProjectile", P("string projectile, text args"),
+                                  "<projectile> <view|origin> <target|origin|none> <speed> <damage> <cof> <skill|none>"),
+    "offer": CommandSpec("Offer", P("entity target, text what"), "Give a target an item or gold <amount>"),
+    "recvoffer": CommandSpec("ReceiveOffer", P("string response"), "accept, reject or decline the current offer"),
+    "setanim.framerate": CommandSpec("SetAnimFrameRate", P("float rate"), "Animation playback rate"),
+    "setanim.movespeed": CommandSpec("SetAnimMoveSpeed", P("float speed"), "Movement speed of the current animation"),
+    "setcallback": CommandSpec("SetCallback", P("string callback, string state"), "touch|think|blocked|render enable|disable"),
+    "setmonsterclip": CommandSpec("SetMonsterClip", P("bool obey"), "Obey monster clip brushes"),
+    "fov": CommandSpec("SetFieldOfView", P("float fov"), "Field of view"),
+    "look": CommandSpec("Look", P("text args"), "Look for targets"),
+    "npcmove": CommandSpec("NpcMove", P("entity target"), "Test/perform a move using reg.npcmove.* (results in game.ret.npcmove.*)"),
+    "scriptflags": CommandSpec("ScriptFlags", P("entity target, text args"), "add|edit|remove|cleartype|clearall|remove_expired ..."),
+    "registerrace": CommandSpec("RegisterRace", P(""), "Register a race from reg.race.*"),
+    "registertitle": CommandSpec("RegisterTitle", P("text args"), "<name> [skills]"),
+    "menuitem.register": CommandSpec("RegisterMenuItemLocals", P(""), "Register a menu item from reg.mitem.*"),
+    # --- items ------------------------------------------------------------------------------------
+    "sethand": CommandSpec("SetHand", P("string hand"), "left, right, any, both or undroppable"),
+    "splayviewanim": CommandSpec("PlayItemViewAnim", P("entity item, int anim"), "View animation of a specific item"),
+    "registerattack": CommandSpec("RegisterAttack", P(""), "Register an attack from reg.attack.*"),
+    "wearable": CommandSpec("SetWearable", P("text args"), "<0|1> <slot;slot...>"),
+    "groupable": CommandSpec("SetGroupable", P("int count"), "Item stacks in multiples of this"),
+    "setdmg": CommandSpec("SetDamageInfo", P("string field, text value"), "hit|dmg|type <value> while handling damage"),
+    "setwearpos": CommandSpec("SetWearPosition", P("text args"), "<position> <slots>"),
+    "callclitemevent": CommandSpec("CallClientItemEvent", P("entity item, string event, text params"), "Event on the owner's client copy of an item"),
+    # --- named arrays (stored on the entity, addressed by name) -----------------------------------
+    "array.create": CommandSpec("ArrayCreate", P("text args"), "[entity] <name>"),
+    "array.add": CommandSpec("ArrayAdd", P("text args"), "[entity] <name> <value>"),
+    "array.add_unique": CommandSpec("ArrayAddUnique", P("text args"), "[entity] <name> <value>"),
+    "array.set": CommandSpec("ArraySet", P("text args"), "[entity] <name> <index> <value>"),
+    "array.del": CommandSpec("ArrayRemoveAt", P("text args"), "[entity] <name> <index>"),
+    "array.erase": CommandSpec("ArrayErase", P("text args"), "[entity] <name>"),
+    "array.clear": CommandSpec("ArrayClear", P("text args"), "[entity] <name>"),
+    "g_array.create": CommandSpec("GlobalArrayCreate", P("string name"), "Global named array"),
+    "g_array.add": CommandSpec("GlobalArrayAdd", P("string name, text value"), "Append to a global array"),
+    "g_array.set": CommandSpec("GlobalArraySet", P("string name, int index, text value"), "Set an element of a global array"),
+    "g_array.erase": CommandSpec("GlobalArrayErase", P("string name"), "Delete a global array"),
 }
 
 # Item scripts: the item's own command replaces the global one with the same name
 ITEM_COMMANDS: dict[str, CommandSpec] = {
     "playermessage": CommandSpec("OwnerMessage", P("text message"), "Message to the item's owner"),
     "playermessagecl": CommandSpec("OwnerMessageClient", P("text message"), "Client message to the item's owner"),
+}
+
+# Commands that write their result into the variable named by their first parameter
+OUTPUT_COMMANDS: dict[str, tuple[str, str]] = {
+    "getplayers": ("GetPlayers", "string"),          # ;-list of every player
+    "getplayersnb": ("GetActivePlayers", "string"),   # ;-list of players who are not AFK
 }
 
 # Commands lowered to plain AngelScript (assignments, control flow) - never wrapped.
@@ -213,6 +268,25 @@ FUNCTIONS: dict[str, FunctionSpec] = {
     "$dir": FunctionSpec("Vector3", method="DirectionTo", params=["Vector3", "Vector3"]),
     "$get_traceline": FunctionSpec("string", method="TraceLine", params=["Vector3", "Vector3"]),
     "$timestamp": FunctionSpec("string", method="Timestamp", params=[]),
+    "$get_takedmg": FunctionSpec("float", method="DamageTakenOf", params=["entity", "string"], doc="Damage-taken multiplier for a type"),
+    "$ratio": FunctionSpec("float", method="Ratio", params=["float", "float", "float"], doc="Value between min and max at a 0-1 ratio"),
+    "$within_cone2d": FunctionSpec("bool", method="WithinCone2D", params=["Vector3", "Vector3", "Vector3", "float"]),
+    "$angles3d": FunctionSpec("Vector3", method="Angles3DTo", params=["Vector3", "Vector3"]),
+    "$get_scriptflag": FunctionSpec("string", method="ScriptFlag", params=["entity", "string", "string"]),
+    "$sort_entlist": FunctionSpec("string", method="SortEntities", params=["string", "string"]),
+    "$left": FunctionSpec("string", method="Left", params=["string", "int"]),
+    "$right": FunctionSpec("string", method="Right", params=["string", "int"]),
+    "$search_string": FunctionSpec("int", template="{0}.findFirst({1})", params=["string", "string"]),
+    "$get_arrayfind": FunctionSpec("int", method="ArrayFind", params=["string", "string"], doc="Index of a value in a named array, or -1"),
+    "$g_get_array": FunctionSpec("string", method="GetGlobalArray", params=["string", "string"]),
+    "$g_get_array_amt": FunctionSpec("int", method="GetGlobalArrayCount", params=["string"]),
+    "$anim_exists": FunctionSpec("int", method="AnimIndex", params=["string"], doc="Sequence index of an animation, or -1"),
+    "$can_damage": FunctionSpec("bool", method="CanDamage", params=["entity"]),
+    "$map_exists": FunctionSpec("bool", method="MapExists", params=["string"]),
+    "$get_insphere": FunctionSpec("string", method="FindOneInSphere", params=["string", "float"]),
+    "$get_tbox": FunctionSpec("string", method="FindInBox", params=["string", "float"]),
+    "$get_sky_height": FunctionSpec("float", method="SkyHeight", params=["Vector3"]),
+    "$anglediff": FunctionSpec("float", method="AngleDifference", params=["float", "float"]),
 }
 
 # $get(<entity>, <property>) - typed helpers (ScriptEntity methods); others use GetProp(e, "prop")
@@ -244,12 +318,37 @@ GET_PROPERTIES: dict[str, tuple[str, str]] = {
     "onground": ("IsOnGround", "bool"),
     "inwater": ("IsInWater", "bool"),
     "canattack": ("CanAttack", "bool"),
+    "viewangles": ("ViewAnglesOf", "Vector3"),
+    "eyepos": ("EyePositionOf", "Vector3"),
+    "maxmp": ("MaxManaOf", "float"),
+    "gender": ("GenderOf", "string"),
+    "is_worn": ("IsWorn", "bool"),
+    "inhand": ("IsInHand", "bool"),
+    "target": ("TargetOf", "entity"),
+    "name.full": ("FullNameOf", "string"),
+    "dmgmulti": ("DamageMultiplierOf", "float"),
+    "range2d": ("Range2DTo", "float"),
+    "speed": ("SpeedOf", "float"),
+    "nopush": ("IsNoPush", "bool"),
+    "anim.index": ("AnimIndexOf", "int"),
+    "active_item": ("ActiveItemOf", "entity"),
+    "is_projectile": ("IsProjectile", "bool"),
+    "xp": ("ExperienceOf", "float"),
 }
+# $get(<entity>, <vector property>.<component>) -> helper(entity).component
+GET_VECTOR_COMPONENTS = {"origin": "OriginOf", "angles": "AnglesOf", "velocity": "VelocityOf",
+                         "viewangles": "ViewAnglesOf", "eyepos": "EyePositionOf"}
+COMPONENTS = {"x": "x", "y": "y", "z": "z", "pitch": "x", "yaw": "y", "roll": "z"}
+# $get(<entity>, skill.<name>) / stat.<name>
+GET_PREFIXED = {"skill.": ("SkillOf", "float"), "stat.": ("StatOf", "float")}
 # Two-argument properties: $get(e, prop, arg)
 GET_PROPERTIES_ARG: dict[str, tuple[str, str]] = {
     "scriptvar": ("ScriptVarOf", "string"),
     "relationship": ("RelationshipOf", "string"),
     "haseffect": ("HasEffect", "bool"),
+    "keydown": ("IsKeyDown", "bool"),
+    "attachpos": ("AttachmentPositionOf", "Vector3"),
+    "svbonepos": ("BonePositionOf", "Vector3"),
 }
 
 # game.* values with a readable accessor; anything else is host.Eval("game....")
@@ -259,8 +358,14 @@ BUILTINS: dict[str, tuple[str, str]] = {
     "game.clientside": ("false", "bool"),
     "game.map.name": ("MapName()", "string"),
     "game.pvp": ("IsPvp()", "bool"),
-    "game.players": ("PlayerList()", "string"),
-    "game.playersnb": ("PlayerCount()", "int"),
+    "game.players": ("PlayerCount()", "int"),
+    "game.playersnb": ("ActivePlayerCount()", "int"),
+    "game.monster.origin": ("MyOrigin()", "Vector3"),
+    "game.monster.angles": ("MyAngles()", "Vector3"),
+    "game.monster.hp": ("MyHealth()", "float"),
+    "game.monster.maxhp": ("MyMaxHealth()", "float"),
+    "game.item.hand_index": ("ItemHandIndex()", "int"),
+    "game.script.last_sent_id": ("LastClientScriptId()", "string"),
 }
 
 # Entity names the engine resolves relative to the calling entity (ScriptHost::FindEntity)

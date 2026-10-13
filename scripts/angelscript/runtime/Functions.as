@@ -126,6 +126,114 @@ mixin class LegacyFunctions
 		return host.Function("timestamp");
 	}
 
+	// $get_takedmg - Damage-taken multiplier for a type
+	float DamageTakenOf(const string &in arg1, const string &in arg2)
+	{
+		return Float(host.Function("get_takedmg", { arg1, arg2 }));
+	}
+
+	// $ratio - Value between min and max at a 0-1 ratio
+	float Ratio(float arg1, float arg2, float arg3)
+	{
+		return Float(host.Function("ratio", { Text(arg1), Text(arg2), Text(arg3) }));
+	}
+
+	// $within_cone2d
+	bool WithinCone2D(const Vector3 &in arg1, const Vector3 &in arg2, const Vector3 &in arg3, float arg4)
+	{
+		return Truthy(host.Function("within_cone2d", { Text(arg1), Text(arg2), Text(arg3), Text(arg4) }));
+	}
+
+	// $angles3d
+	Vector3 Angles3DTo(const Vector3 &in arg1, const Vector3 &in arg2)
+	{
+		return Vec(host.Function("angles3d", { Text(arg1), Text(arg2) }));
+	}
+
+	// $get_scriptflag
+	string ScriptFlag(const string &in arg1, const string &in arg2, const string &in arg3)
+	{
+		return host.Function("get_scriptflag", { arg1, arg2, arg3 });
+	}
+
+	// $sort_entlist
+	string SortEntities(const string &in arg1, const string &in arg2)
+	{
+		return host.Function("sort_entlist", { arg1, arg2 });
+	}
+
+	// $left
+	string Left(const string &in arg1, int arg2)
+	{
+		return host.Function("left", { arg1, Text(arg2) });
+	}
+
+	// $right
+	string Right(const string &in arg1, int arg2)
+	{
+		return host.Function("right", { arg1, Text(arg2) });
+	}
+
+	// $get_arrayfind - Index of a value in a named array, or -1
+	int ArrayFind(const string &in arg1, const string &in arg2)
+	{
+		return Int(host.Function("get_arrayfind", { arg1, arg2 }));
+	}
+
+	// $g_get_array
+	string GetGlobalArray(const string &in arg1, const string &in arg2)
+	{
+		return host.Function("g_get_array", { arg1, arg2 });
+	}
+
+	// $g_get_array_amt
+	int GetGlobalArrayCount(const string &in arg1)
+	{
+		return Int(host.Function("g_get_array_amt", { arg1 }));
+	}
+
+	// $anim_exists - Sequence index of an animation, or -1
+	int AnimIndex(const string &in arg1)
+	{
+		return Int(host.Function("anim_exists", { arg1 }));
+	}
+
+	// $can_damage
+	bool CanDamage(const string &in arg1)
+	{
+		return Truthy(host.Function("can_damage", { arg1 }));
+	}
+
+	// $map_exists
+	bool MapExists(const string &in arg1)
+	{
+		return Truthy(host.Function("map_exists", { arg1 }));
+	}
+
+	// $get_insphere
+	string FindOneInSphere(const string &in arg1, float arg2)
+	{
+		return host.Function("get_insphere", { arg1, Text(arg2) });
+	}
+
+	// $get_tbox
+	string FindInBox(const string &in arg1, float arg2)
+	{
+		return host.Function("get_tbox", { arg1, Text(arg2) });
+	}
+
+	// $get_sky_height
+	float SkyHeight(const Vector3 &in arg1)
+	{
+		return Float(host.Function("get_sky_height", { Text(arg1) }));
+	}
+
+	// $anglediff
+	float AngleDifference(float arg1, float arg2)
+	{
+		return Float(host.Function("anglediff", { Text(arg1), Text(arg2) }));
+	}
+
 	// $get(<entity>,id)
 	string IdOf(const string &in entity)
 	{
@@ -288,6 +396,102 @@ mixin class LegacyFunctions
 		return Truthy(host.Function("get", { entity, "canattack" }));
 	}
 
+	// $get(<entity>,viewangles)
+	Vector3 ViewAnglesOf(const string &in entity)
+	{
+		return Vec(host.Function("get", { entity, "viewangles" }));
+	}
+
+	// $get(<entity>,eyepos)
+	Vector3 EyePositionOf(const string &in entity)
+	{
+		return Vec(host.Function("get", { entity, "eyepos" }));
+	}
+
+	// $get(<entity>,maxmp)
+	float MaxManaOf(const string &in entity)
+	{
+		return Float(host.Function("get", { entity, "maxmp" }));
+	}
+
+	// $get(<entity>,gender)
+	string GenderOf(const string &in entity)
+	{
+		return host.Function("get", { entity, "gender" });
+	}
+
+	// $get(<entity>,is_worn)
+	bool IsWorn(const string &in entity)
+	{
+		return Truthy(host.Function("get", { entity, "is_worn" }));
+	}
+
+	// $get(<entity>,inhand)
+	bool IsInHand(const string &in entity)
+	{
+		return Truthy(host.Function("get", { entity, "inhand" }));
+	}
+
+	// $get(<entity>,target)
+	string TargetOf(const string &in entity)
+	{
+		return host.Function("get", { entity, "target" });
+	}
+
+	// $get(<entity>,name.full)
+	string FullNameOf(const string &in entity)
+	{
+		return host.Function("get", { entity, "name.full" });
+	}
+
+	// $get(<entity>,dmgmulti)
+	float DamageMultiplierOf(const string &in entity)
+	{
+		return Float(host.Function("get", { entity, "dmgmulti" }));
+	}
+
+	// $get(<entity>,range2d)
+	float Range2DTo(const string &in entity)
+	{
+		return Float(host.Function("get", { entity, "range2d" }));
+	}
+
+	// $get(<entity>,speed)
+	float SpeedOf(const string &in entity)
+	{
+		return Float(host.Function("get", { entity, "speed" }));
+	}
+
+	// $get(<entity>,nopush)
+	bool IsNoPush(const string &in entity)
+	{
+		return Truthy(host.Function("get", { entity, "nopush" }));
+	}
+
+	// $get(<entity>,anim.index)
+	int AnimIndexOf(const string &in entity)
+	{
+		return Int(host.Function("get", { entity, "anim.index" }));
+	}
+
+	// $get(<entity>,active_item)
+	string ActiveItemOf(const string &in entity)
+	{
+		return host.Function("get", { entity, "active_item" });
+	}
+
+	// $get(<entity>,is_projectile)
+	bool IsProjectile(const string &in entity)
+	{
+		return Truthy(host.Function("get", { entity, "is_projectile" }));
+	}
+
+	// $get(<entity>,xp)
+	float ExperienceOf(const string &in entity)
+	{
+		return Float(host.Function("get", { entity, "xp" }));
+	}
+
 	// $get(<entity>,scriptvar,<name>)
 	string ScriptVarOf(const string &in entity, const string &in name)
 	{
@@ -304,6 +508,52 @@ mixin class LegacyFunctions
 	bool HasEffect(const string &in entity, const string &in name)
 	{
 		return Truthy(host.Function("get", { entity, "haseffect", name }));
+	}
+
+	// $get(<entity>,keydown,<name>)
+	bool IsKeyDown(const string &in entity, const string &in name)
+	{
+		return Truthy(host.Function("get", { entity, "keydown", name }));
+	}
+
+	// $get(<entity>,attachpos,<name>)
+	Vector3 AttachmentPositionOf(const string &in entity, const string &in name)
+	{
+		return Vec(host.Function("get", { entity, "attachpos", name }));
+	}
+
+	// $get(<entity>,svbonepos,<name>)
+	Vector3 BonePositionOf(const string &in entity, const string &in name)
+	{
+		return Vec(host.Function("get", { entity, "svbonepos", name }));
+	}
+
+	// $get(<entity>,skill.<name>)
+	float SkillOf(const string &in entity, const string &in name)
+	{
+		return Float(host.Function("get", { entity, "skill." + name }));
+	}
+
+	// $get(<entity>,stat.<name>)
+	float StatOf(const string &in entity, const string &in name)
+	{
+		return Float(host.Function("get", { entity, "stat." + name }));
+	}
+
+	// getplayers <var> - the command writes its result into a variable
+	string GetPlayers()
+	{
+		host.SetLocal("__result", "");
+		host.Command("getplayers", { "__result" });
+		return host.GetLocal("__result");
+	}
+
+	// getplayersnb <var> - the command writes its result into a variable
+	string GetActivePlayers()
+	{
+		host.SetLocal("__result", "");
+		host.Command("getplayersnb", { "__result" });
+		return host.GetLocal("__result");
 	}
 
 	// game.time
@@ -325,14 +575,50 @@ mixin class LegacyFunctions
 	}
 
 	// game.players
-	string PlayerList()
+	int PlayerCount()
 	{
-		return host.Eval("game.players");
+		return Int(host.Eval("game.players"));
 	}
 
 	// game.playersnb
-	int PlayerCount()
+	int ActivePlayerCount()
 	{
 		return Int(host.Eval("game.playersnb"));
+	}
+
+	// game.monster.origin
+	Vector3 MyOrigin()
+	{
+		return Vec(host.Eval("game.monster.origin"));
+	}
+
+	// game.monster.angles
+	Vector3 MyAngles()
+	{
+		return Vec(host.Eval("game.monster.angles"));
+	}
+
+	// game.monster.hp
+	float MyHealth()
+	{
+		return Float(host.Eval("game.monster.hp"));
+	}
+
+	// game.monster.maxhp
+	float MyMaxHealth()
+	{
+		return Float(host.Eval("game.monster.maxhp"));
+	}
+
+	// game.item.hand_index
+	int ItemHandIndex()
+	{
+		return Int(host.Eval("game.item.hand_index"));
+	}
+
+	// game.script.last_sent_id
+	string LastClientScriptId()
+	{
+		return host.Eval("game.script.last_sent_id");
 	}
 }

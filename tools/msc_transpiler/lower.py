@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from . import mapping, names
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token, source_text
 from .infer import BOOL, FLOAT, INT, MATH_COMMANDS, STRING, VECTOR, Evidence, Inference, literal_type
-from .ir import ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Comment, For, If, Line, Method, Return, Stmt, TExpr
+from .ir import ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Comment, For, If, Line, Method, Return, Stmt, TExpr
 from .syntax import Cmd, CmdList, Event, Token
 
 NUMERIC_TYPES = (INT, FLOAT)
@@ -306,7 +306,11 @@ class HandlerLowerer:
         self.declared: set[str] = set()
         self.top_declarations: list[Stmt] = []
         self.depth = 0
+        self.menu_item = False          # reg.mitem.* written through a MenuItem
+        self.inline_decls: set[int] = set()     # id(Cmd) of `local X v` lines that declare X in place
+        self.aliases: dict[str, str] = {}       # local name -> parameter it only copies
         self._prepare_locals()
+        self._analyze_locals()
 
     # -- locals --------------------------------------------------------------------
 
@@ -340,7 +344,7 @@ class HandlerLowerer:
                     visit(e)
 
         visit(self.event.commands)
-        taken = {n for n, _ in self.params.values()} | set(self.ctx.fields) | {"result", "self", "host"}
+        taken = {n for n, _ in self.params.values()} | set(self.ctx.fields) | {"result", "self", "host", "menuItem"}
         for name in order:
             ident = names.local(name)
             while ident in taken or ident in names.AS_KEYWORDS:
@@ -352,6 +356,51 @@ class HandlerLowerer:
                 # arithmetic on a copy of a text variable: keep the local numeric
                 t = FLOAT if ev.floats else (FLOAT if ev.math else INT)
             self.locals[name] = (ident, t)
+
+    WRITE_COMMANDS = {"local", "setvar", "setvard", "stradd", "strconc", "vectoradd", "vectormultiply", "vectorscale",
+                      "vectorset", "token.add", "token.del", "token.set", "token.scramble"} | set(MATH_COMMANDS)
+
+    def _analyze_locals(self) -> None:
+        """Where each local can be declared: in place when its first use is a plain assignment in the
+        innermost block that holds every use; and locals that only copy a parameter are the parameter."""
+        occurrences: dict[str, list[tuple[Cmd, tuple[int, ...], bool]]] = {}
+        writes: dict[str, list[Cmd]] = {}
+
+        def visit(cmds: CmdList, path: tuple[int, ...]) -> None:
+            here = path + (id(cmds),)
+            for cmd in cmds.cmds:
+                lname = cmd.name.lower()
+                target = cmd.args[0].text if cmd.args and lname in self.WRITE_COMMANDS else None
+                for i, token in enumerate(cmd.args):
+                    expr = parse_token(token.text, token.quoted)
+                    for sub_expr in _walk(expr):
+                        if isinstance(sub_expr, Name) and sub_expr.text in self.locals:
+                            is_write = i == 0 and sub_expr.text == target
+                            occurrences.setdefault(sub_expr.text, []).append((cmd, here, is_write))
+                if target in self.locals:
+                    writes.setdefault(target, []).append(cmd)
+                if cmd.if_list:
+                    visit(cmd.if_list, here)
+                for e in cmd.else_lists:
+                    visit(e, here)
+
+        visit(self.event.commands, ())
+        root = (id(self.event.commands),)
+        for name, occ in occurrences.items():
+            first_cmd, first_path, first_is_write = occ[0]
+            value_tokens = first_cmd.args[1:]
+            reads_itself = any(isinstance(e, Name) and e.text == name
+                               for tok in value_tokens for e in _walk(parse_token(tok.text, tok.quoted)))
+            plain_assign = first_is_write and first_cmd.name.lower() == "local" and not reads_itself
+            # alias: `local L_X PARAMn` once, at the top, never written again
+            if plain_assign and first_path == root and len(writes.get(name, [])) == 1 and len(value_tokens) == 1:
+                index = param_index(value_tokens[0].text)
+                if index and index in self.params and self.params[index][1] == self.locals[name][1]:
+                    self.aliases[name] = self.params[index][0]
+                    continue
+            common = _common_prefix([p for _, p, _ in occ])
+            if plain_assign and first_path == common:
+                self.inline_decls.add(id(first_cmd))
 
     def _local_evidence(self, ev: Evidence, values: list[Expr]) -> None:
         if len(values) != 1:
@@ -416,7 +465,7 @@ class HandlerLowerer:
             init = convert(TExpr(names.variable(legacy), self.ctx.fields[legacy]), t)
         else:
             init = convert(lit(legacy), t)
-        self.top_declarations.append(Line(f"{t} {ident} = {init.code}"))
+        self.top_declarations.append(Line(f"{t} {ident} = {init.code}", declares=True))
 
     # -- entry -----------------------------------------------------------------------
 
@@ -607,6 +656,9 @@ class HandlerLowerer:
         return lit(source_text(expr))
 
     def name(self, text: str) -> TExpr:
+        if text in self.aliases:
+            ident = self.aliases[text]
+            return TExpr(ident, self.locals[text][1])
         if text in self.locals:
             ident, t = self.locals[text]
             if text not in self.declared:
@@ -679,6 +731,13 @@ class HandlerLowerer:
         entity = self.text(args[0])
         prop = args[1].text
         lower = prop.lower()
+        base, _, component = lower.partition(".")
+        if len(args) == 2 and component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
+            return TExpr(f"{mapping.GET_VECTOR_COMPONENTS[base]}({entity.code}).{mapping.COMPONENTS[component]}", FLOAT)
+        if len(args) == 2:
+            for prefix, (method, t) in mapping.GET_PREFIXED.items():
+                if lower.startswith(prefix) and len(lower) > len(prefix):
+                    return TExpr(f"{method}({entity.code}, {string_literal(prop[len(prefix):])})", t)
         if len(args) == 2 and lower in mapping.GET_PROPERTIES:
             method, t = mapping.GET_PROPERTIES[lower]
             return TExpr(f"{method}({entity.code})", STRING if t == "entity" else t)
@@ -793,14 +852,22 @@ class HandlerLowerer:
             return []
         target = tokens[0].text
         value = self._concat(args[1:])
+        field_name = target[len("reg.mitem."):] if target.lower().startswith("reg.mitem.") else None
+        if field_name in {"id", "title", "type", "data", "callback", "cb_failed", "priority"}:
+            if not self.menu_item:
+                self.menu_item = True
+                self.top_declarations.append(Line("MenuItem menuItem"))
+            return [Line(f"menuItem.{field_name} = {convert(value, STRING).code}")]
         if target.lower().startswith("reg.") or target not in self.locals:
             return [Line(f"SetLocal({string_literal(target)}, {convert(value, STRING).code})")]
+        if target in self.aliases:
+            return []        # the local is just the parameter
         ident, t = self.locals[target]
         code = convert(value, t).code
+        if id(cmd) in self.inline_decls and target not in self.declared:
+            self.declared.add(target)
+            return [Line(f"{t} {ident} = {code}", declares=True)]
         if target not in self.declared:
-            if self.depth == 0:
-                self.declared.add(target)
-                return [Line(f"{t} {ident} = {code}")]
             self._declare_early(target)
         return [Line(f"{ident} = {code}")]
 
@@ -868,7 +935,7 @@ class HandlerLowerer:
             return [Line(f"{target.code} = {convert(value, target.type).code}")]
         value = self.value(args[1])
         if target.type == STRING:
-            return [Line(f"{target.code} += {join([lit(''), value]).code if value.type != STRING else value.code}")]
+            return [Append(target.code, value)]
         return [Line(f"{target.code} = {convert(join([convert(target, STRING), value]), target.type).code}")]
 
     def _strconc(self, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
@@ -990,6 +1057,14 @@ class HandlerLowerer:
     # mapped commands -----------------------------------------------------------------------
 
     def _mapped_command(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
+        if name == "menuitem.register" and self.menu_item and not args:
+            return [Line("RegisterMenuItem(menuItem)")]
+        if name in mapping.OUTPUT_COMMANDS and len(tokens) == 1:
+            method, t = mapping.OUTPUT_COMMANDS[name]
+            target = self._lvalue(tokens[0].text)
+            if target is not None:
+                return [Line(f"{target.code} = {convert(TExpr(f'{method}()', t), target.type).code}")]
+            return [Line(f"SetVar({string_literal(tokens[0].text)}, {method}())")]
         spec = (mapping.ITEM_COMMANDS.get(name) if self.ctx.kind == "item" else None) or mapping.COMMANDS.get(name)
         if spec is not None:
             call = self._wrapper_call(spec, args)
@@ -1016,6 +1091,28 @@ class HandlerLowerer:
             if rest:
                 out.append(join([self.value(a) for a in rest], " ").code)
         return f"{spec.method}({', '.join(out)})"
+
+
+def _walk(expr: Expr):
+    yield expr
+    if isinstance(expr, Call):
+        for a in expr.args:
+            yield from _walk(a)
+    elif isinstance(expr, Vector):
+        for p in expr.parts:
+            yield from _walk(p)
+    elif isinstance(expr, Not):
+        yield from _walk(expr.operand)
+
+
+def _common_prefix(paths: list[tuple[int, ...]]) -> tuple[int, ...]:
+    prefix = paths[0]
+    for p in paths[1:]:
+        n = 0
+        while n < len(prefix) and n < len(p) and prefix[n] == p[n]:
+            n += 1
+        prefix = prefix[:n]
+    return prefix
 
 
 def _cmd_source(cmd: Cmd) -> str:

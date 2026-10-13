@@ -98,6 +98,25 @@ def functions_file() -> str:
         lines.append(f"\t\treturn {_from_text(type_, call)};")
         lines.append("\t}")
 
+    for prefix, (method, type_) in mapping.GET_PREFIXED.items():
+        lines.append("")
+        lines.append(f"\t// $get(<entity>,{prefix}<name>)")
+        lines.append(f"\t{_ret_type(type_)} {method}(const string &in entity, const string &in name)")
+        lines.append("\t{")
+        call = 'host.Function("get", { entity, "' + prefix + '" + name })'
+        lines.append(f"\t\treturn {_from_text(type_, call)};")
+        lines.append("\t}")
+
+    for command, (method, type_) in mapping.OUTPUT_COMMANDS.items():
+        lines.append("")
+        lines.append(f"\t// {command} <var> - the command writes its result into a variable")
+        lines.append(f"\t{_ret_type(type_)} {method}()")
+        lines.append("\t{")
+        lines.append('\t\thost.SetLocal("__result", "");')
+        lines.append(f'\t\thost.Command("{command}", {{ "__result" }});')
+        lines.append(f'\t\treturn {_from_text(type_, "host.GetLocal(" + chr(34) + "__result" + chr(34) + ")")};')
+        lines.append("\t}")
+
     for builtin, (code, type_) in mapping.BUILTINS.items():
         if not code.endswith("()"):
             continue

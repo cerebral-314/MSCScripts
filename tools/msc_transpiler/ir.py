@@ -33,6 +33,14 @@ class Stmt:
 @dataclass
 class Line(Stmt):
     code: str                  # without the semicolon
+    declares: bool = False     # a variable declaration (never the only statement of a braceless body)
+
+
+@dataclass
+class Append(Stmt):
+    """`target += value` on a string (consecutive appends are merged by the printer)."""
+    target: str
+    value: TExpr
 
 
 @dataclass

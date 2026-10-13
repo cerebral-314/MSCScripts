@@ -828,6 +828,414 @@ mixin class LegacyCommands
 		host.Command("precachefile", { script });
 	}
 
+	// cleffect - Client effect (see Scripting_AllDocs.txt)
+	void ClientEffect()
+	{
+		host.Command("cleffect");
+	}
+
+	// cleffect - Client effect (see Scripting_AllDocs.txt)
+	void ClientEffect(const string &in args)
+	{
+		host.Command("cleffect", { args });
+	}
+
+	// clientevent - new|update|persist|remove <target|all> <script|id> [event] [params]
+	void ClientEvent(const string &in action, const string &in target)
+	{
+		host.Command("clientevent", { action, target });
+	}
+
+	// clientevent - new|update|persist|remove <target|all> <script|id> [event] [params]
+	void ClientEvent(const string &in action, const string &in target, const string &in args)
+	{
+		host.Command("clientevent", { action, target, args });
+	}
+
+	// effect - Server-side effect: beam, tempent, screenshake, screenfade, glow, decal
+	void Effect()
+	{
+		host.Command("effect");
+	}
+
+	// effect - Server-side effect: beam, tempent, screenshake, screenfade, glow, decal
+	void Effect(const string &in args)
+	{
+		host.Command("effect", { args });
+	}
+
+	// clearfx - Remove every applied effect
+	void ClearEffects()
+	{
+		host.Command("clearfx");
+	}
+
+	// setenv - World environment (client)
+	void SetEnvironment(const string &in prop)
+	{
+		host.Command("setenv", { prop });
+	}
+
+	// setenv - World environment (client)
+	void SetEnvironment(const string &in prop, const string &in value)
+	{
+		host.Command("setenv", { prop, value });
+	}
+
+	// sound.play3d - <sound> <volume> <origin> [attenuation] [channel] [pitch]
+	void PlaySound3D(const string &in sound, float volume, const Vector3 &in origin)
+	{
+		host.Command("sound.play3d", { sound, Text(volume), Text(origin) });
+	}
+
+	// sound.play3d - <sound> <volume> <origin> [attenuation] [channel] [pitch]
+	void PlaySound3D(const string &in sound, float volume, const Vector3 &in origin, const string &in args)
+	{
+		host.Command("sound.play3d", { sound, Text(volume), Text(origin), args });
+	}
+
+	// playmp3 - <player|all> <system|combat|stop> <file>
+	void PlayMusic(const string &in player, const string &in mode)
+	{
+		host.Command("playmp3", { player, mode });
+	}
+
+	// playmp3 - <player|all> <system|combat|stop> <file>
+	void PlayMusic(const string &in player, const string &in mode, const string &in file)
+	{
+		host.Command("playmp3", { player, mode, file });
+	}
+
+	// hud.addstatusicon - <icon> <name> <duration> [tga]
+	void AddStatusIcon(const string &in player)
+	{
+		host.Command("hud.addstatusicon", { player });
+	}
+
+	// hud.addstatusicon - <icon> <name> <duration> [tga]
+	void AddStatusIcon(const string &in player, const string &in args)
+	{
+		host.Command("hud.addstatusicon", { player, args });
+	}
+
+	// saytextrange - Range at which speech is heard (or default)
+	void SetSayTextRange()
+	{
+		host.Command("saytextrange");
+	}
+
+	// saytextrange - Range at which speech is heard (or default)
+	void SetSayTextRange(const string &in range)
+	{
+		host.Command("saytextrange", { range });
+	}
+
+	// tossprojectile - <projectile> <view|origin> <target|origin|none> <speed> <damage> <cof> <skill|none>
+	void TossProjectile(const string &in projectile)
+	{
+		host.Command("tossprojectile", { projectile });
+	}
+
+	// tossprojectile - <projectile> <view|origin> <target|origin|none> <speed> <damage> <cof> <skill|none>
+	void TossProjectile(const string &in projectile, const string &in args)
+	{
+		host.Command("tossprojectile", { projectile, args });
+	}
+
+	// offer - Give a target an item or gold <amount>
+	void Offer(const string &in target)
+	{
+		host.Command("offer", { target });
+	}
+
+	// offer - Give a target an item or gold <amount>
+	void Offer(const string &in target, const string &in what)
+	{
+		host.Command("offer", { target, what });
+	}
+
+	// recvoffer - accept, reject or decline the current offer
+	void ReceiveOffer(const string &in response)
+	{
+		host.Command("recvoffer", { response });
+	}
+
+	// setanim.framerate - Animation playback rate
+	void SetAnimFrameRate(float rate)
+	{
+		host.Command("setanim.framerate", { Text(rate) });
+	}
+
+	// setanim.movespeed - Movement speed of the current animation
+	void SetAnimMoveSpeed(float speed)
+	{
+		host.Command("setanim.movespeed", { Text(speed) });
+	}
+
+	// setcallback - touch|think|blocked|render enable|disable
+	void SetCallback(const string &in callback, const string &in state)
+	{
+		host.Command("setcallback", { callback, state });
+	}
+
+	// setmonsterclip - Obey monster clip brushes
+	void SetMonsterClip(bool obey)
+	{
+		host.Command("setmonsterclip", { Text(obey) });
+	}
+
+	// fov - Field of view
+	void SetFieldOfView(float fov)
+	{
+		host.Command("fov", { Text(fov) });
+	}
+
+	// look - Look for targets
+	void Look()
+	{
+		host.Command("look");
+	}
+
+	// look - Look for targets
+	void Look(const string &in args)
+	{
+		host.Command("look", { args });
+	}
+
+	// npcmove - Test/perform a move using reg.npcmove.* (results in game.ret.npcmove.*)
+	void NpcMove(const string &in target)
+	{
+		host.Command("npcmove", { target });
+	}
+
+	// scriptflags - add|edit|remove|cleartype|clearall|remove_expired ...
+	void ScriptFlags(const string &in target)
+	{
+		host.Command("scriptflags", { target });
+	}
+
+	// scriptflags - add|edit|remove|cleartype|clearall|remove_expired ...
+	void ScriptFlags(const string &in target, const string &in args)
+	{
+		host.Command("scriptflags", { target, args });
+	}
+
+	// registerrace - Register a race from reg.race.*
+	void RegisterRace()
+	{
+		host.Command("registerrace");
+	}
+
+	// registertitle - <name> [skills]
+	void RegisterTitle()
+	{
+		host.Command("registertitle");
+	}
+
+	// registertitle - <name> [skills]
+	void RegisterTitle(const string &in args)
+	{
+		host.Command("registertitle", { args });
+	}
+
+	// menuitem.register - Register a menu item from reg.mitem.*
+	void RegisterMenuItemLocals()
+	{
+		host.Command("menuitem.register");
+	}
+
+	// sethand - left, right, any, both or undroppable
+	void SetHand(const string &in hand)
+	{
+		host.Command("sethand", { hand });
+	}
+
+	// splayviewanim - View animation of a specific item
+	void PlayItemViewAnim(const string &in item, int anim)
+	{
+		host.Command("splayviewanim", { item, Text(anim) });
+	}
+
+	// registerattack - Register an attack from reg.attack.*
+	void RegisterAttack()
+	{
+		host.Command("registerattack");
+	}
+
+	// wearable - <0|1> <slot;slot...>
+	void SetWearable()
+	{
+		host.Command("wearable");
+	}
+
+	// wearable - <0|1> <slot;slot...>
+	void SetWearable(const string &in args)
+	{
+		host.Command("wearable", { args });
+	}
+
+	// groupable - Item stacks in multiples of this
+	void SetGroupable(int count)
+	{
+		host.Command("groupable", { Text(count) });
+	}
+
+	// setdmg - hit|dmg|type <value> while handling damage
+	void SetDamageInfo(const string &in field)
+	{
+		host.Command("setdmg", { field });
+	}
+
+	// setdmg - hit|dmg|type <value> while handling damage
+	void SetDamageInfo(const string &in field, const string &in value)
+	{
+		host.Command("setdmg", { field, value });
+	}
+
+	// setwearpos - <position> <slots>
+	void SetWearPosition()
+	{
+		host.Command("setwearpos");
+	}
+
+	// setwearpos - <position> <slots>
+	void SetWearPosition(const string &in args)
+	{
+		host.Command("setwearpos", { args });
+	}
+
+	// callclitemevent - Event on the owner's client copy of an item
+	void CallClientItemEvent(const string &in item, const string &in event)
+	{
+		host.Command("callclitemevent", { item, event });
+	}
+
+	// callclitemevent - Event on the owner's client copy of an item
+	void CallClientItemEvent(const string &in item, const string &in event, const string &in params)
+	{
+		host.Command("callclitemevent", { item, event, params });
+	}
+
+	// array.create - [entity] <name>
+	void ArrayCreate()
+	{
+		host.Command("array.create");
+	}
+
+	// array.create - [entity] <name>
+	void ArrayCreate(const string &in args)
+	{
+		host.Command("array.create", { args });
+	}
+
+	// array.add - [entity] <name> <value>
+	void ArrayAdd()
+	{
+		host.Command("array.add");
+	}
+
+	// array.add - [entity] <name> <value>
+	void ArrayAdd(const string &in args)
+	{
+		host.Command("array.add", { args });
+	}
+
+	// array.add_unique - [entity] <name> <value>
+	void ArrayAddUnique()
+	{
+		host.Command("array.add_unique");
+	}
+
+	// array.add_unique - [entity] <name> <value>
+	void ArrayAddUnique(const string &in args)
+	{
+		host.Command("array.add_unique", { args });
+	}
+
+	// array.set - [entity] <name> <index> <value>
+	void ArraySet()
+	{
+		host.Command("array.set");
+	}
+
+	// array.set - [entity] <name> <index> <value>
+	void ArraySet(const string &in args)
+	{
+		host.Command("array.set", { args });
+	}
+
+	// array.del - [entity] <name> <index>
+	void ArrayRemoveAt()
+	{
+		host.Command("array.del");
+	}
+
+	// array.del - [entity] <name> <index>
+	void ArrayRemoveAt(const string &in args)
+	{
+		host.Command("array.del", { args });
+	}
+
+	// array.erase - [entity] <name>
+	void ArrayErase()
+	{
+		host.Command("array.erase");
+	}
+
+	// array.erase - [entity] <name>
+	void ArrayErase(const string &in args)
+	{
+		host.Command("array.erase", { args });
+	}
+
+	// array.clear - [entity] <name>
+	void ArrayClear()
+	{
+		host.Command("array.clear");
+	}
+
+	// array.clear - [entity] <name>
+	void ArrayClear(const string &in args)
+	{
+		host.Command("array.clear", { args });
+	}
+
+	// g_array.create - Global named array
+	void GlobalArrayCreate(const string &in name)
+	{
+		host.Command("g_array.create", { name });
+	}
+
+	// g_array.add - Append to a global array
+	void GlobalArrayAdd(const string &in name)
+	{
+		host.Command("g_array.add", { name });
+	}
+
+	// g_array.add - Append to a global array
+	void GlobalArrayAdd(const string &in name, const string &in value)
+	{
+		host.Command("g_array.add", { name, value });
+	}
+
+	// g_array.set - Set an element of a global array
+	void GlobalArraySet(const string &in name, int index)
+	{
+		host.Command("g_array.set", { name, Text(index) });
+	}
+
+	// g_array.set - Set an element of a global array
+	void GlobalArraySet(const string &in name, int index, const string &in value)
+	{
+		host.Command("g_array.set", { name, Text(index), value });
+	}
+
+	// g_array.erase - Delete a global array
+	void GlobalArrayErase(const string &in name)
+	{
+		host.Command("g_array.erase", { name });
+	}
+
 	// playermessage - Message to the item's owner
 	void OwnerMessage()
 	{

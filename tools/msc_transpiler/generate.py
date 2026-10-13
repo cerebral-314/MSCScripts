@@ -488,9 +488,9 @@ class Project:
         for res in resources:
             body.append(Line(f"Precache({string_literal(res)})"))
         for method, delay in timers:
-            body.append(Line(f"CallEventDelayed({_delay_code(delay)}, {string_literal(method)})"))
+            body.append(Line(f"CallEventDelayed({_delay_code(delay, ctx)}, {string_literal(method)})"))
         for event, delay in auto_run:
-            body.append(Line(f"CallEventDelayed({_delay_code(delay)}, {string_literal(event)})"))
+            body.append(Line(f"CallEventDelayed({_delay_code(delay, ctx)}, {string_literal(event)})"))
         return Method("OnLoad", [], "void", body,
                       comments=["Load time: resources the .script parser precaches, and timers it starts"],
                       qualifiers="override")
@@ -551,10 +551,12 @@ def _param_from_array(t: str, i: int) -> str:
     return raw if t == STRING else convert(TExpr(raw, STRING), t).code
 
 
-def _delay_code(token: str) -> str:
+def _delay_code(token: str, ctx: FileContext) -> str:
     expr = parse_token(token)
     if isinstance(expr, Number):
         return number_code(expr.text, FLOAT)
+    if token in ctx.fields:
+        return convert(TExpr(names.variable(token), ctx.fields[token]), FLOAT).code
     return f"Float(Eval({string_literal(token)}))"
 
 

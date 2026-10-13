@@ -156,6 +156,27 @@ class ScriptEntity : LegacyCommands, LegacyFunctions
 		return host.Function("get", { entity, prop, option, option2 });
 	}
 
+	// ---- Menus ----------------------------------------------------------------------------------
+
+	// menuitem.register: adds an item to the menu being built in game_menu_getoptions
+	void RegisterMenuItem(const MenuItem &in item)
+	{
+		SetMenuValue("reg.mitem.id", item.id);
+		SetMenuValue("reg.mitem.title", item.title);
+		SetMenuValue("reg.mitem.type", item.type);
+		SetMenuValue("reg.mitem.data", item.data);
+		SetMenuValue("reg.mitem.callback", item.callback);
+		SetMenuValue("reg.mitem.cb_failed", item.cb_failed);
+		SetMenuValue("reg.mitem.priority", item.priority);
+		host.Command("menuitem.register");
+	}
+
+	private void SetMenuValue(const string &in name, const string &in value)
+	{
+		if (!value.isEmpty())
+			host.SetLocal(name, value);
+	}
+
 	// ---- Anything without a typed wrapper yet -----------------------------------------------
 
 	// A .script command with already-evaluated arguments
