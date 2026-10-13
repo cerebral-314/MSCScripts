@@ -4,13 +4,16 @@ Layout of the output (scripts/angelscript/converted/<same path>.as):
 
 * A file that other scripts #include ("library") becomes a `mixin class` holding its
   variables and event handlers. Handlers are named <Class>_On<Event> because several
-  included files usually handle the same event and every one of them must run.
-* A file nothing includes ("leaf") becomes a class tagged [script "<path>"] that mixes in
-  everything it includes, in the engine's parse order. Its own handlers are written as the
-  event methods themselves (On<Event>), calling the included files' handlers in the order
-  the .script engine runs them. A generated section at the end connects the class to the
-  engine: load-time values, first-think blocks, timers, event dispatch by .script name and
-  variable access by .script name.
+  included files usually handle the same event and every one of them must run. The file
+  also has a shared [script "<path>"] class (see entity.py), compiled once, which is both
+  what spawns when the library is spawned directly and the base class of the scripts that
+  include it.
+* A file nothing includes ("leaf") becomes a class tagged [script "<path>"] that derives from
+  its biggest include's shared class and mixes in the rest, in the engine's parse order. Its
+  own handlers are written as the event methods themselves (On<Event>), calling the included
+  files' handlers in the order the .script engine runs them.
+* A generated section at the end of each class connects it to the engine: load-time work,
+  first-think blocks, timers and event dispatch by .script name (see wiring.py).
 """
 
 from __future__ import annotations
@@ -18,15 +21,19 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from . import engine, mapping, names
+from . import engine, names
 from .corpus import Corpus, normalize
-from .emit import emit_block, emit_method
+from .emit import emit_method, emit_methods
 from .expr import Call, Name, Number, Literal, parse_token, param_index, walk
 from .infer import BOOL, FLOAT, INT, STRING, VECTOR, Inference
-from .ir import Comment, If, Line, Method, Return, Stmt, TExpr
-from .loader import Load, classify_kind, load
-from .lower import FileContext, HandlerLowerer, Quirk, SignatureTable, convert, number_code, string_literal
+from .ir import Line, Method, Stmt, TExpr
+from .loader import Load, load
+from .context import FileContext, Quirk, SignatureTable
+from .lower import HandlerLowerer
+from .values import convert, number_code, string_literal
 from .syntax import Cmd, CmdList, Event, Include, ParsedFile, ScopeDirective
+from .entity import EntityClasses
+from .wiring import EventWiring
 
 HEADER = "#pragma context server"
 RUNTIME_INCLUDE = '#include "runtime/ScriptEntity.as"'
@@ -45,9 +52,10 @@ class FileInfo:
     declared_const: set[str] = field(default_factory=set)
     called_events: set[str] = field(default_factory=set)
     handler_names: dict[int, str] = field(default_factory=dict)   # id(Event) -> method name
+    block_names: dict[int, str] = field(default_factory=dict)     # id(Event) of unnamed blocks -> method name
 
 
-class Project:
+class Project(EntityClasses):
     def __init__(self, corpus: Corpus):
         self.corpus = corpus
         self.all_names = corpus.names()
@@ -69,6 +77,7 @@ class Project:
         self._guaranteed: dict[str, set[str]] | None = None
         self._possible: dict[str, set[str]] = {}
         self.quirks: list[Quirk] = []
+        self.wiring = EventWiring(self)
 
     # -- facts about files ----------------------------------------------------------------
 
@@ -110,6 +119,7 @@ class Project:
                 n = counts[item.name]
                 info.handler_names[id(item)] = f"{cls}_{self.signatures.get(item.name).method}{'' if n == 1 else f'_{n}'}"
         scope = "shared"
+        blocks: dict[str, int] = defaultdict(int)
         for item in parsed.items:
             if isinstance(item, ScopeDirective):
                 scope = item.scope
@@ -118,6 +128,10 @@ class Project:
             elif isinstance(item, Event):
                 if (item.explicit_scope or scope) == "client":
                     continue
+                if not item.name and _has_runtime(item):
+                    kind = "Timer" if item.repeat_delay is not None else "FirstThink"
+                    blocks[kind] += 1
+                    info.block_names[id(item)] = f"{cls}_{kind}{'' if blocks[kind] == 1 else blocks[kind]}"
                 local_names = _locals_of(item.commands)
                 for op in item.load_ops:
                     if op.kind in ("const", "setvar") and names.is_identifier(op.name) and not param_index(op.name):
@@ -204,9 +218,8 @@ class Project:
 
     def generate(self, name: str) -> str:
         name = self.canonical(name)
-        if self.is_library(name):
-            return self._generate_library(name)
-        return self._generate_leaf(name)
+        text = self._generate_library(name) if self.is_library(name) else self._generate_leaf(name)
+        return _comment_text(text)
 
     def _file_header(self, info: FileInfo) -> list[str]:
         lines = [HEADER, "", f"// Converted from {info.name}.script by msc_transpiler."]
@@ -271,14 +284,9 @@ class Project:
         # anything that needs evaluation is assigned in OnLoad instead
         return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, string_literal(var))
 
-    def _handler_methods(self, info: FileInfo, ctx: FileContext, prefix: str) -> tuple[list[Method], dict]:
-        """Every event handler of the file as its own method. Returns (methods, index) where index maps
-        (event name or None, order) -> method name."""
+    def _handler_methods(self, info: FileInfo, ctx: FileContext) -> list[Method]:
+        """Every event handler of the file as its own method."""
         methods: list[Method] = []
-        index: dict[int, str] = {}
-        counts: dict[str, int] = defaultdict(int)
-        first_think = 0
-        timer = 0
         scope = "shared"
         for item in info.parsed.items:
             if isinstance(item, ScopeDirective):
@@ -294,15 +302,9 @@ class Project:
                 method_name = info.handler_names[id(item)]
                 lowerer = HandlerLowerer(ctx, item, sig, method_name)
             else:
-                if not _has_runtime(item):
+                if id(item) not in info.block_names:
                     continue
-                if item.repeat_delay is not None:
-                    timer += 1
-                    method_name = f"{prefix}Timer{'' if timer == 1 else timer}"
-                else:
-                    first_think += 1
-                    method_name = f"{prefix}FirstThink{'' if first_think == 1 else first_think}"
-                item.name = None
+                method_name = info.block_names[id(item)]
                 lowerer = HandlerLowerer(ctx, item, None, method_name)
                 lowerer.event_name = method_name
             method = lowerer.lower()
@@ -311,8 +313,7 @@ class Project:
             label = item.name or ("timer" if item.repeat_delay is not None else "first think")
             method.comments.insert(0, f"{label}" if item.name else f"unnamed block ({label})")
             methods.append(method)
-            index[id(item)] = method_name
-        return methods, index
+        return methods
 
     # library -------------------------------------------------------------------------------
 
@@ -326,229 +327,69 @@ class Project:
         lines.append("{")
         fields = self._field_lines(info, ctx)
         lines.extend(fields)
-        methods, _ = self._handler_methods(info, ctx, f"{class_name}_")
-        for method in methods:
+        for method in self._handler_methods(info, ctx):
             lines.append("")
             lines.extend(emit_method(method))
+
+        declared = self.wiring.mixin_declared(name)
+        events = [self.wiring.event_method(e, name, runs) for e, runs in declared.items()]
+        dispatch = self.wiring.mixin_dispatch(name)
+        if events or dispatch:
+            lines.append("")
+            lines.append("\t// ---- Engine wiring (generated) ----")
+        if events:
+            lines.append("")
+            lines.append("\t// What each event runs in a script that includes this file")
+            lines.append("\t// (a script with more handlers for an event declares its own)")
+            emit_methods(lines, events)
+        if dispatch:
+            lines.append("")
+            lines.extend(emit_method(dispatch))
         lines.append("}")
         lines.append("")
         self.quirks.extend(ctx.quirks)
+        lines.extend(self.entity_lines(name, []))
+        lines.append("")
         return "\n".join(lines)
 
     # leaf ------------------------------------------------------------------------------------
 
     def _generate_leaf(self, name: str) -> str:
         info = self.info(name)
-        loaded = self.load(name)
-        closure = loaded.files
-        ctx = self.context(name, closure)
-        class_name = self.class_of(name)
-        mixins = [self.class_of(f) for f in closure[1:]]
-
         lines = self._file_header(info)
-        lines.append(f'[script "{info.name}"]')
-        lines.append(f"class {class_name} : ScriptEntity{''.join(', ' + m for m in mixins)}")
-        lines.append("{")
-
-        # fields: this file's own, plus corrections where include order decides a different value
-        own_fields = self._field_lines(info, ctx)
-        lines.extend(own_fields)
-        corrections = self._const_corrections(loaded, info, ctx)
-        if corrections:
-            if own_fields:
-                lines.append("")
-            lines.append("\t// Constants defined by included files, with the value that wins for this script")
-            lines.extend(corrections)
-
-        own_methods, own_index = self._handler_methods(info, ctx, f"{class_name}_")
-        own_by_name = {m.name: m for m in own_methods}
-
-        composed, wiring_methods = self._compose_events(loaded, info, ctx, own_index, own_by_name)
-        for method in composed:
-            lines.append("")
-            lines.extend(emit_method(method))
-
+        lines.extend(self.entity_lines(name, self._handler_methods(info, self.file_context(name))))
         lines.append("")
-        lines.append("\t// ---- Engine wiring (generated) ----")
-        for method in wiring_methods:
-            lines.append("")
-            lines.extend(emit_method(method))
-        lines.append("}")
-        lines.append("")
-        self.quirks.extend(ctx.quirks)
         return "\n".join(lines)
 
-    def _const_corrections(self, loaded: Load, info: FileInfo, ctx: FileContext) -> list[str]:
-        """The class's own field wins over mixins, and earlier mixins win over later ones. Where the
-        engine's first-definition-wins order picks another value, declare the winner here."""
-        out = []
-        mixin_files = loaded.files[1:]
-        for const, winner in loaded.consts.items():
-            if const in info.declared or not names.is_identifier(const):
-                continue
-            first = next((f for f in mixin_files if const in self.info(f).declared), None)
-            if first is None:
-                continue
-            first_value = self.info(first).declared.get(const, "")
-            if first.lower() == winner.file.lower() and first_value == winner.value:
-                continue
-            t = self.inference.field_type(const)
-            init = self._initializer(const, t, winner.value, winner.quoted, ctx)
-            out.append(f"\t{t} {names.variable(const)} = {init}; // from {winner.file}")
-        return out
-
-    def _compose_events(self, loaded: Load, info: FileInfo, ctx: FileContext,
-                        own_index: dict, own_by_name: dict[str, Method]) -> tuple[list[Method], list[Method]]:
-        handlers: dict[str, list[tuple[str, str]]] = defaultdict(list)   # event -> [(file, method)]
-        first_think: list[str] = []
-        timers: list[tuple[str, str]] = []           # (method, delay token)
-        auto_run: list[tuple[str, str]] = []
-        file_counters: dict[tuple[str, str], int] = defaultdict(int)
-        anon_counters: dict[tuple[str, str], int] = defaultdict(int)
-        for le in loaded.events:
-            ev = le.event
-            cls = self.class_of(le.file)
-            if ev.name:
-                method = self.info(le.file).handler_names[id(ev)]
-                handlers[ev.name].append((le.file, method))
-                if ev.repeat_delay is not None and _auto_runs(ev):
-                    auto_run.append((ev.name, ev.repeat_delay))
-            elif _has_runtime(ev):
-                kind = "Timer" if ev.repeat_delay is not None else "FirstThink"
-                anon_counters[(le.file, kind)] += 1
-                n = anon_counters[(le.file, kind)]
-                method = f"{cls}_{kind}{'' if n == 1 else n}"
-                if kind == "Timer":
-                    timers.append((method, ev.repeat_delay))
-                else:
-                    first_think.append(method)
-
-        called: set[str] = set()
-        for f in loaded.files:
-            called |= self.info(f).called_events
-        for event in called:
-            handlers.setdefault(event, [])
-
-        composed: list[Method] = []
-        wiring: list[Method] = []
-        own_name = info.name.lower()
-        for event, hs in handlers.items():
-            sig = self.signatures.get(event)
-            args = ", ".join(n for _, n in sig.params)
-            own = [m for f, m in hs if f.lower() == own_name]
-            body: list[Stmt] = []
-            inline_method = None
-            if len(own) == 1 and hs and hs[-1][1] == own[0] and sig.returns == "void":
-                inline_method = own_by_name.get(own[0])
-            calls = hs[:-1] if inline_method else hs
-            if sig.returns == "string":
-                if len(calls) == 1:
-                    body = [Return(f"{calls[0][1]}({args})")]
-                else:
-                    body = [Line('string result = ""')]
-                    body += [Line(f"result = AppendResult(result, {m}({args}))") for _, m in calls]
-                    body.append(Return("result"))
-            else:
-                body = [Line(f"{m}({args})", trailing=_origin_comment(f, info)) for f, m in calls]
-            method = Method(sig.method, list(sig.params), sig.returns, body)
-            if sig.params:
-                method.defaults = {n: _default(t) for t, n in sig.params}
-            spec = mapping.ENGINE_EVENTS.get(event)
-            method.comments = [event + (f" - {spec.doc}" if spec and spec.doc else "")]
-            if inline_method is not None:
-                method.body = body + inline_method.body
-                method.comments += [c for c in inline_method.comments[1:]]
-                composed.append(method)
-                own_by_name.pop(inline_method.name, None)
-            else:
-                wiring.append(method)
-
-        # own handlers that were not inlined stay as methods of the class
-        own_rest = [m for m in own_by_name.values()]
-        composed = own_rest + composed
-
-        on_load = self._on_load(loaded, ctx, timers, auto_run)
-        if on_load.body:
-            wiring.append(on_load)
-        if first_think:
-            wiring.append(Method("OnFirstThink", [], "void", [Line(f"{m}()") for m in first_think],
-                                 comments=["Unnamed .script blocks: run on the first think after spawn"],
-                                 qualifiers="override"))
-        if handlers or timers:
-            wiring.append(self._dispatch(handlers, [m for m, _ in timers]))
-        get_var, set_var = self._var_access(loaded)
-        if len(get_var.body) > 1:
-            wiring.append(get_var)
-            wiring.append(set_var)
-        return composed, wiring
-
-    def _on_load(self, loaded: Load, ctx: FileContext, timers, auto_run) -> Method:
+    def _on_load(self, loaded: Load, ctx: FileContext, plan) -> Method:
         body: list[Stmt] = []
         resources = _resources(self, loaded)
         for res in resources:
             body.append(Line(f"Precache({string_literal(res)})"))
-        for method, delay in timers:
+        for _, method, delay in plan.timers:
             body.append(Line(f"CallEventDelayed({_delay_code(delay, ctx)}, {string_literal(method)})"))
-        for event, delay in auto_run:
+        for event, delay in plan.auto_run:
             body.append(Line(f"CallEventDelayed({_delay_code(delay, ctx)}, {string_literal(event)})"))
         return Method("OnLoad", [], "void", body,
                       comments=["Load time: resources the .script parser precaches, and timers it starts"],
                       qualifiers="override")
 
-    def _dispatch(self, handlers: dict[str, list], timer_methods: list[str]) -> Method:
-        body: list[Stmt] = []
-        for event in sorted(handlers):
-            sig = self.signatures.get(event)
-            args = ", ".join(_param_from_array(t, i) for i, (t, _) in enumerate(sig.params))
-            call = f"{sig.method}({args})"
-            then: list[Stmt] = [Line(f"Return({call})") if sig.returns == "string" else Line(call), Return("true")]
-            body.append(If(TExpr(f"name == {string_literal(event)}", BOOL, 5), then, compact=True))
-        for method in timer_methods:
-            body.append(If(TExpr(f"name == {string_literal(method)}", BOOL, 5), [Line(f"{method}()"), Return("true")],
-                           compact=True))
-        body.append(Return("false"))
-        return Method("DispatchEvent", [("string", "name"), ("const array<string> &in", "params")], "bool", body,
-                      comments=["Events by their .script names (engine, callexternal, timers)"], qualifiers="override")
-
-    def _var_access(self, loaded: Load) -> tuple[Method, Method]:
-        get_body: list[Stmt] = []
-        set_body: list[Stmt] = []
-        seen: set[str] = set()
-        for f in loaded.files:
-            for var in self.info(f).declared:
-                if var in seen:
-                    continue
-                seen.add(var)
-                t = self.inference.field_type(var)
-                ident = names.variable(var)
-                to_text = ident if t == STRING else f"Text({ident})"
-                get_body.append(If(TExpr(f"name == {string_literal(var)}", BOOL, 5),
-                                   [Line(f"value = {to_text}"), Return("true")], compact=True))
-                from_text = convert(TExpr("value", STRING), t).code
-                set_body.append(If(TExpr(f"name == {string_literal(var)}", BOOL, 5),
-                                   [Line(f"{ident} = {from_text}"), Return("true")], compact=True))
-        get_body.append(Return("false"))
-        set_body.append(Return("false"))
-        get = Method("GetLegacyVar", [("string", "name"), ("string &out", "value")], "bool", get_body,
-                     comments=["Variables by their .script names ($get(x,scriptvar,'NAME'), engine reads)"],
-                     qualifiers="override")
-        set_ = Method("SetLegacyVar", [("string", "name"), ("string", "value")], "bool", set_body, qualifiers="override")
-        return get, set_
-
-
 # ----------------------------------------------------------------------------------------------
 
-def _origin_comment(file: str, info: FileInfo) -> str:
-    return file if file.lower() != info.name.lower() else ""
-
-
-def _default(t: str) -> str:
-    return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
-
-
-def _param_from_array(t: str, i: int) -> str:
-    raw = f"Param(params, {i})"
-    return raw if t == STRING else convert(TExpr(raw, STRING), t).code
+def _comment_text(text: str) -> str:
+    """Scripts are read as Latin-1, but some comments were saved as UTF-8. String constants are
+    plain ASCII by now, so any other character is comment text: lines whose bytes are valid
+    UTF-8 are shown as that."""
+    if text.isascii():
+        return text
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if not line.isascii():
+            try:
+                lines[i] = line.encode("latin-1").decode("utf-8")
+            except UnicodeError:
+                pass
+    return "\n".join(lines)
 
 
 def _delay_code(token: str, ctx: FileContext) -> str:
@@ -593,15 +434,6 @@ def _called_events(cmd: Cmd) -> list[str]:
 
 def _has_runtime(event: Event) -> bool:
     return bool(event.commands.cmds)
-
-
-def _auto_runs(event: Event) -> bool:
-    """A named event runs on its own when its repeatdelay comes after its eventname."""
-    last = None
-    for op in event.load_ops:
-        if op.kind in ("eventname", "repeatdelay"):
-            last = op.kind
-    return last == "repeatdelay"
 
 
 def _resources(project: Project, loaded: Load) -> list[str]:

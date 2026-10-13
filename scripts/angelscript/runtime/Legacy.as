@@ -2,34 +2,18 @@
 
 // Helpers used by converted MS-Script code. They read and write values the way the .script
 // interpreter does, so converted scripts behave the same when they mix numbers and text.
-
-// ---- Entity names the engine resolves relative to the calling entity ----------------------
-const string ENT_ME = "ent_me";
-const string ENT_OWNER = "ent_owner";
-const string ENT_TARGET = "ent_target";
-const string ENT_LASTSEEN = "ent_lastseen";
-const string ENT_LASTHEARD = "ent_lastheard";
-const string ENT_LASTSPOKE = "ent_lastspoke";
-const string ENT_LASTOFFERED = "ent_lastoffered";
-const string ENT_LASTGAVE = "ent_lastgave";
-const string ENT_LASTSTOLE = "ent_laststole";
-const string ENT_LASTUSED = "ent_lastused";
-const string ENT_LASTSTRUCK = "ent_laststruck";
-const string ENT_LASTSTRUCKBYME = "ent_laststruckbyme";
-const string ENT_LASTPROJECTILE = "ent_lastprojectile";
-const string ENT_LASTCREATED = "ent_lastcreated";
-const string ENT_CREATIONOWNER = "ent_creationowner";
-const string ENT_EXPOWNER = "ent_expowner";
-const string ENT_LOCALPLAYER = "ent_localplayer";
-const string ENT_CURRENTPLAYER = "ent_currentplayer";
+//
+// Everything here is `shared`: compiled once and used by every script module (shared code
+// may only use other shared code, which is why ScriptEntity and the library base classes can
+// call these).
 
 // ---- Text <-> values ---------------------------------------------------------------------
 
-string Text(const string &in value) { return value; }
-string Text(int value) { return formatInt(value); }
-string Text(bool value) { return value ? "1" : "0"; }
+shared string Text(const string &in value) { return value; }
+shared string Text(int value) { return formatInt(value); }
+shared string Text(bool value) { return value ? "1" : "0"; }
 
-string Text(float value)
+shared string Text(float value)
 {
 	if (value == float(int(value)))
 		return formatInt(int(value));
@@ -37,31 +21,31 @@ string Text(float value)
 }
 
 // "(x,y,z)", the format .script uses for vectors
-string Text(const Vector3 &in value)
+shared string Text(const Vector3 &in value)
 {
 	return "(" + Text(value.x) + "," + Text(value.y) + "," + Text(value.z) + ")";
 }
 
 // atoi: the leading integer of the text, 0 if there is none
-int Int(const string &in text)
+shared int Int(const string &in text)
 {
 	return int(parseFloat(text));
 }
 
 // atof: the leading number of the text, 0 if there is none
-float Float(const string &in text)
+shared float Float(const string &in text)
 {
 	return float(parseFloat(text));
 }
 
 // `if X` in .script: true when the text starts with a non-zero integer
-bool Truthy(const string &in text)
+shared bool Truthy(const string &in text)
 {
 	return Int(text) != 0;
 }
 
 // "(x,y,z)" or "(x,y)" to a vector; anything else is (0,0,0)
-Vector3 Vec(const string &in text)
+shared Vector3 Vec(const string &in text)
 {
 	int open = text.findFirst("(");
 	int close = text.findFirst(")", open + 1);
@@ -77,36 +61,32 @@ Vector3 Vec(const string &in text)
 
 // ---- Comparisons ---------------------------------------------------------------------------
 
-bool StartsWith(const string &in text, const string &in prefix)
+shared bool StartsWith(const string &in text, const string &in prefix)
 {
 	return text.findFirst(prefix) == 0;
 }
 
-bool Contains(const string &in text, const string &in part)
+shared bool Contains(const string &in text, const string &in part)
 {
 	return text.findFirst(part) >= 0;
 }
 
 // ---- Arithmetic as the math commands do it -----------------------------------------------
 
-float Clamp(float value, float low, float high)
-{
-	return value < low ? low : (value > high ? high : value);
-}
-
-int Clamp(int value, int low, int high)
+// capvar: kept within [low, high] (floats, like every math command)
+shared float Clamp(float value, float low, float high)
 {
 	return value < low ? low : (value > high ? high : value);
 }
 
 // divide: dividing by zero leaves the value unchanged
-float Divide(float value, float divisor)
+shared float Divide(float value, float divisor)
 {
 	return divisor == 0 ? value : value / divisor;
 }
 
 // mod is an integer remainder; by zero leaves the value unchanged
-float Modulo(float value, float divisor)
+shared float Modulo(float value, float divisor)
 {
 	int d = int(divisor);
 	return d == 0 ? value : float(int(value) % d);
@@ -115,7 +95,7 @@ float Modulo(float value, float divisor)
 // ---- `;`-separated token lists ------------------------------------------------------------
 
 // The engine stops at the first empty entry ("a;;b" is one entry)
-array<string>@ Tokens(const string &in list)
+shared array<string>@ Tokens(const string &in list)
 {
 	array<string> result;
 	array<string>@ parts = list.split(";");
@@ -128,18 +108,18 @@ array<string>@ Tokens(const string &in list)
 	return result;
 }
 
-string JoinTokens(const array<string> &in tokens)
+shared string JoinTokens(const array<string> &in tokens)
 {
 	return join(tokens, ";");
 }
 
-string TokenAdd(const string &in list, const string &in value)
+shared string TokenAdd(const string &in list, const string &in value)
 {
 	return list.isEmpty() ? value : list + ";" + value;
 }
 
 // token.del: unchanged when the index is out of range
-string TokenRemove(const string &in list, int index)
+shared string TokenRemove(const string &in list, int index)
 {
 	array<string>@ tokens = Tokens(list);
 	if (index < 0 || index >= int(tokens.length()))
@@ -149,7 +129,7 @@ string TokenRemove(const string &in list, int index)
 }
 
 // token.set: unchanged when the index is out of range
-string TokenSet(const string &in list, int index, const string &in value)
+shared string TokenSet(const string &in list, int index, const string &in value)
 {
 	array<string>@ tokens = Tokens(list);
 	if (index < 0 || index >= int(tokens.length()))
@@ -159,7 +139,7 @@ string TokenSet(const string &in list, int index, const string &in value)
 }
 
 // token.scramble: shuffled, with a trailing ";" like the engine writes it
-string TokenShuffle(const string &in list)
+shared string TokenShuffle(const string &in list)
 {
 	array<string>@ tokens = Tokens(list);
 	string result;
@@ -175,19 +155,19 @@ string TokenShuffle(const string &in list)
 // ---- Event plumbing -------------------------------------------------------------------------
 
 // Parameter <index> of an event, "" when the caller passed fewer
-string Param(const array<string> &in params, uint index)
+shared string Param(const array<string> &in params, uint index)
 {
 	return index < params.length() ? params[index] : "";
 }
 
 // `return` adds to the entity's result; several returns are separated by ";"
-string AppendResult(const string &in result, const string &in value)
+shared string AppendResult(const string &in result, const string &in value)
 {
 	return result.isEmpty() ? value : result + ";" + value;
 }
 
 // vectormultiply <var> <vector>: multiplies component by component
-Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)
+shared Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)
 {
 	return Vector3(value.x * factors.x, value.y * factors.y, value.z * factors.z);
 }
@@ -195,7 +175,7 @@ Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)
 // ---- Menus ----------------------------------------------------------------------------------
 
 // The reg.mitem.* values that menuitem.register reads (see RegisterMenuItem)
-class MenuItem
+shared class MenuItem
 {
 	string id;
 	string title;

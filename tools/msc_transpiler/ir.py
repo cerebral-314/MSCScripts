@@ -81,3 +81,4 @@ class Method:
     comments: list[str] = field(default_factory=list)
     qualifiers: str = ""                  # e.g. "override"
     defaults: dict[str, str] = field(default_factory=dict)
+    compact: bool = False                 # print on one line: void OnX() { A_OnX(); } // comment

@@ -85,8 +85,9 @@ class GenerateTests(unittest.TestCase):
         self.assertIn("mixin class Base", base)
         self.assertIn("void Base_OnGameSpawn()", base)
         text = squash(child)
-        self.assertIn("class Child : ScriptEntity, Base", text)
-        self.assertIn('string SOUND = "b.wav";', text)          # first definition wins
+        self.assertIn('[script "npc/base"]\nshared class BaseScript : ScriptEntity, Base', squash(base))
+        self.assertIn("class Child : BaseScript", text)
+        self.assertIn('Child()\n{\nSOUND = "b.wav";\n}', text)    # first definition wins
         self.assertIn("void OnGameSpawn()\n{\nBase_OnGameSpawn(); // npc/base\nSetGold(5);", text)
 
     def test_override_drops_earlier_handlers(self):
@@ -97,14 +98,97 @@ class GenerateTests(unittest.TestCase):
         child, _ = convert(files, "npc/child")
         self.assertNotIn("Base_OnGameSpawn();", child)
 
+    def test_latin1_text_keeps_its_bytes(self):
+        out, _ = convert({"npc/a": "{ ev\n saytext \xafNONE\xaf\n}"}, "npc/a")
+        self.assertIn('SayText("\\xAFNONE\\xAF");', out)
+        out.encode("ascii")     # nothing that is not plain ASCII reaches the source
+
+    def test_capvar_clamps_as_floats(self):
+        out, _ = convert({"npc/a": "{\n const TURN 4\n}\n{ ev\n local L_YAW $neg(TURN)\n capvar L_YAW $neg(TURN) TURN\n"
+                                   " local L_N 2\n capvar L_N 1 3\n setvard COUNT L_N\n}"}, "npc/a")
+        self.assertIn("Clamp(yaw, -TURN, TURN)", out)    # one float overload: no int truncation to choose
+        self.assertNotIn("int Clamp", out)
+
+    def test_nothing_is_written_after_a_return(self):
+        from msc_transpiler.emit import emit_method
+        from msc_transpiler.ir import Line, Method, Return
+        method = Method("F", [], "string", [Line("A()"), Return("result"), Return("result")])
+        self.assertEqual(squash("\n".join(emit_method(method))), "string F()\n{\nA();\nreturn result;\n}")
+
     def test_unset_variable_condition_is_reported(self):
         out, project = convert({"npc/a": "{ ev\n if NEVER_SET\n hp 1\n}"}, "npc/a")
         self.assertTrue(any("NEVER_SET is never set" in q.message for q in project.quirks))
 
-    def test_dispatch_and_variable_tables(self):
+    def test_dispatch_and_variables_by_name(self):
         out, _ = convert({"npc/a": "{\n setvard COUNT 0\n}\n{ game_touch\n add COUNT 1\n}"}, "npc/a")
         self.assertIn('if (name == "game_touch") { OnGameTouch(Param(params, 0)); return true; }', out)
-        self.assertIn('if (name == "COUNT") { value = Text(COUNT); return true; }', out)
+        # variables are reached by name through the engine (fields keep their .script names)
+        self.assertNotIn("GetLegacyVar", out)
+        self.assertIn("float COUNT = 0.0f;", out)
+
+    LIBRARY = {
+        "npc/base": "{ game_spawn\n hp 10\n}\n{ npc_struck\n callevent flinch\n callevent maybe\n}\n{ flinch\n hp 1\n}",
+        "npc/plain": "#include npc/base\n{ game_think\n gold 1\n}",
+    }
+
+    def test_library_declares_its_events_and_dispatches_them(self):
+        base, _ = convert(self.LIBRARY, "npc/base")
+        text = squash(base)
+        self.assertIn("void OnGameSpawn() { Base_OnGameSpawn(); } // game_spawn", text)
+        self.assertIn("void OnMaybe() {} // maybe", text)       # called here, handled nowhere
+        self.assertIn("bool Base_DispatchEvent(const string &in name, const array<string> &in params)", text)
+        self.assertIn('if (name == "flinch") { OnFlinch(); return true; }', text)
+
+    def test_leaf_uses_the_included_event_methods(self):
+        leaf, _ = convert(self.LIBRARY, "npc/plain")
+        self.assertNotIn("OnGameSpawn", leaf)
+        self.assertNotIn("OnFlinch", leaf)
+        text = squash(leaf)
+        self.assertIn("class Plain : BaseScript", text)
+        self.assertIn('if (name == "game_think") { OnGameThink(); return true; }\n'
+                      'return BaseScript::DispatchEvent(name, params);', text)
+
+    def test_leaf_declares_events_two_includes_handle(self):
+        files = dict(self.LIBRARY, **{
+            "npc/other": "{ game_spawn\n gold 2\n}",
+            "npc/both": "#include npc/base\n#include npc/other",
+        })
+        leaf, _ = convert(files, "npc/both")
+        text = squash(leaf)
+        self.assertIn("void OnGameSpawn()\n{\nBase_OnGameSpawn(); // npc/base\nOther_OnGameSpawn(); // npc/other\n}", text)
+        self.assertNotIn("void OnFlinch", text)
+        self.assertIn("class Both : BaseScript, Other", text)
+        self.assertIn("return Other_DispatchEvent(name, params)\n|| BaseScript::DispatchEvent(name, params);", text)
+
+    def test_override_wins_over_the_first_mixin(self):
+        files = {
+            "npc/a": "{ game_spawn\n hp 1\n}",
+            "npc/b": "#include npc/a\n{ [override] game_spawn\n hp 2\n}",
+            "npc/c": "{ game_think\n hp 3\n}",
+            "npc/b_first": "#include npc/b",
+            "npc/a_first": "#include npc/c\n#include npc/a\n#include npc/b",
+        }
+        b, _ = convert(files, "npc/b")
+        self.assertIn("shared class BScript : AScript, B", b)  # B's mixin method overrides A's inherited one
+        b_first, _ = convert(files, "npc/b_first")
+        self.assertNotIn("void OnGameSpawn", b_first)
+        # mixin semantics alone: C's and A's methods come before B's, so the override needs declaring
+        a_first, project = convert(files, "npc/a_first")
+        self.assertIn("class AFirst : BScript, C", a_first)
+        self.assertNotIn("void OnGameSpawn", a_first)
+        self.assertEqual(project.wiring.class_resolved("npc/a_first")["game_spawn"], ["B_OnGameSpawn"])
+
+    def test_inherited_field_with_another_value_is_set_in_the_constructor(self):
+        files = {
+            "npc/base": "{\n const SPEED 10\n}\n{ game_spawn\n hp SPEED\n}",
+            "npc/fast": "{\n const SPEED 50\n}\n#include npc/base",
+            "npc/same": "#include npc/base",
+        }
+        fast, _ = convert(files, "npc/fast")
+        self.assertIn("Fast()\n{\nSPEED = 50;\n}", squash(fast))
+        self.assertNotIn("int SPEED", fast)                    # inherited fields are never declared again
+        same, _ = convert(files, "npc/same")
+        self.assertNotIn("SPEED", same)
 
 
 if __name__ == "__main__":

@@ -16,12 +16,16 @@
 //   DispatchEvent()  every event, by its .script name ("game_spawn", "npc_targetsighted", ...)
 //   OnFirstThink()   the .script's unnamed { } blocks, which run on the first think after spawn
 //
-// GetLegacyVar/SetLegacyVar let the engine and unconverted scripts read and
-// write this script's variables by their .script names ($get(x,scriptvar,'NAME')).
+// Fields of type bool, int, float, string and Vector3 are this script's variables:
+// the engine and unconverted scripts read and write them by field name
+// ($get(x,scriptvar,'NAME'), setvar from other scripts). Converted fields keep their
+// .script names for that reason.
 //
 // The .script commands and $functions are methods from LegacyCommands and
 // LegacyFunctions (generated from the transpiler's mapping table).
-class ScriptEntity : LegacyCommands, LegacyFunctions
+//
+// The class is `shared`, so it is compiled once and every script module uses that copy.
+shared class ScriptEntity : LegacyCommands, LegacyFunctions
 {
 	ScriptHost@ host;
 
@@ -41,21 +45,31 @@ class ScriptEntity : LegacyCommands, LegacyFunctions
 		return false;
 	}
 
-	bool GetLegacyVar(const string &in name, string &out value)
-	{
-		return false;
-	}
-
-	bool SetLegacyVar(const string &in name, const string &in value)
-	{
-		return false;
-	}
-
 	// The entity this script runs on (ent_me)
 	CBaseEntity@ get_self() property
 	{
 		return host.entity;
 	}
+
+	// Entity names the engine resolves relative to this entity
+	string get_ENT_ME() const property { return "ent_me"; }
+	string get_ENT_OWNER() const property { return "ent_owner"; }
+	string get_ENT_TARGET() const property { return "ent_target"; }
+	string get_ENT_LASTSEEN() const property { return "ent_lastseen"; }
+	string get_ENT_LASTHEARD() const property { return "ent_lastheard"; }
+	string get_ENT_LASTSPOKE() const property { return "ent_lastspoke"; }
+	string get_ENT_LASTOFFERED() const property { return "ent_lastoffered"; }
+	string get_ENT_LASTGAVE() const property { return "ent_lastgave"; }
+	string get_ENT_LASTSTOLE() const property { return "ent_laststole"; }
+	string get_ENT_LASTUSED() const property { return "ent_lastused"; }
+	string get_ENT_LASTSTRUCK() const property { return "ent_laststruck"; }
+	string get_ENT_LASTSTRUCKBYME() const property { return "ent_laststruckbyme"; }
+	string get_ENT_LASTPROJECTILE() const property { return "ent_lastprojectile"; }
+	string get_ENT_LASTCREATED() const property { return "ent_lastcreated"; }
+	string get_ENT_CREATIONOWNER() const property { return "ent_creationowner"; }
+	string get_ENT_EXPOWNER() const property { return "ent_expowner"; }
+	string get_ENT_LOCALPLAYER() const property { return "ent_localplayer"; }
+	string get_ENT_CURRENTPLAYER() const property { return "ent_currentplayer"; }
 
 	// ---- Events -------------------------------------------------------------------------
 

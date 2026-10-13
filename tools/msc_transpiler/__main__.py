@@ -65,7 +65,7 @@ def cmd_convert(args) -> int:
             continue
         path = out_root / output_path(name)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="latin-1", newline="\n")
+        path.write_text(text, encoding="utf-8", newline="\n")
         if args.verbose:
             print(path)
     print(f"converted {len(files) - failures} file(s), {failures} failed, {len(project.quirks)} quirk(s)")
@@ -108,14 +108,14 @@ def cmd_check(args) -> int:
         return 2
     root = Path(args.out)
     leaves = sorted(str(p.relative_to(root).as_posix()) for p in (root / "converted").rglob("*.as")
-                    if '[script "' in p.read_text(encoding="latin-1", errors="replace"))
+                    if '[script "' in p.read_text(encoding="utf-8", errors="replace"))
     jobs = max(1, args.jobs)
     chunks = [leaves[i::jobs] for i in range(jobs)]
     procs = []
     for i, chunk in enumerate(chunks):
         list_file = root / f".check_{i}.txt"
         list_file.write_text("\n".join(chunk) + "\n", encoding="utf-8")
-        procs.append(subprocess.Popen([exe, "--config", config, "--root", str(root), "--quiet", "--list", str(list_file)],
+        procs.append(subprocess.Popen([exe, "--config", config, "--root", str(root), "--quiet", "--keep", "--list", str(list_file)],
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
     errors: list[str] = []
     failed = 0

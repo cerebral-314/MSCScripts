@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from . import engine
 from .corpus import Corpus, normalize
-from .syntax import Event, Include, LoadOp, ParsedFile, ScopeDirective
+from .syntax import Event, Include, ParsedFile, ScopeDirective
 
 SIDE = "server"   # converted scripts currently run on the server only
 

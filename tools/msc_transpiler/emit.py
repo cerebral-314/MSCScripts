@@ -11,7 +11,7 @@ INDENT = "\t"
 
 
 def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
-    from .lower import join
+    from .values import join
     out: list[Stmt] = []
     for stmt in stmts:
         prev = out[-1] if out else None
@@ -42,6 +42,8 @@ def simplify(stmts: list[Stmt]) -> list[Stmt]:
         elif isinstance(stmt, For):
             stmt.body = simplify(stmt.body)
         out.append(stmt)
+        if isinstance(stmt, Return):
+            break       # anything after it never runs
     return out
 
 
@@ -127,14 +129,19 @@ def _chain_is_simple(stmt: If) -> bool:
 
 def emit_method(method: Method, depth: int = 1) -> list[str]:
     indent = INDENT * depth
-    lines = _comment_lines(method.comments, indent)
     params = ", ".join(
         f"{_param_decl(t)} {n}" + (f" = {method.defaults[n]}" if n in method.defaults else "")
         for t, n in method.params)
     qualifiers = f" {method.qualifiers}" if method.qualifiers else ""
-    lines.append(f"{indent}{method.returns} {method.name}({params}){qualifiers}")
-    lines.append(f"{indent}{{")
+    signature = f"{method.returns} {method.name}({params}){qualifiers}"
     body = simplify(method.body)
+    if method.compact and len(body) <= 1 and all(isinstance(s, (Line, Return)) and not s.comments for s in body):
+        inner = f" {emit_block(body, 0)[0]} " if body else ""
+        trail = f" // {method.comments[0]}" if method.comments else ""
+        return [f"{indent}{signature} {{{inner}}}{trail}"]
+    lines = _comment_lines(method.comments, indent)
+    lines.append(f"{indent}{signature}")
+    lines.append(f"{indent}{{")
     while method.returns == "void" and body and isinstance(body[-1], Return) and body[-1].value is None             and not body[-1].comments and not body[-1].trailing:
         body = body[:-1]
     lines.extend(emit_block(body, depth + 1))
@@ -144,3 +151,14 @@ def emit_method(method: Method, depth: int = 1) -> list[str]:
 
 def _param_decl(type_: str) -> str:
     return "const string &in" if type_ == "string" else ("const Vector3 &in" if type_ == "Vector3" else type_)
+
+
+def emit_methods(lines: list[str], methods: list[Method]) -> None:
+    """One-line methods stay together; others are set apart by a blank line."""
+    previous_compact = True
+    for method in methods:
+        out = emit_method(method)
+        if len(out) > 1 or not previous_compact:
+            lines.append("")
+        lines.extend(out)
+        previous_compact = len(out) == 1

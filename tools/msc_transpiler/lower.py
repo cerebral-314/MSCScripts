@@ -16,278 +16,17 @@ Values that are known while converting (literals, `game.serverside`) are folded,
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
 
 from . import mapping, names
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token, source_text
-from .infer import BOOL, FLOAT, INT, MATH_COMMANDS, STRING, VECTOR, Evidence, Inference, literal_type
+from .infer import BOOL, FLOAT, INT, MATH_COMMANDS, STRING, VECTOR, Evidence, literal_type
 from .ir import ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Comment, For, If, Line, Method, Return, Stmt, TExpr
 from .syntax import Cmd, CmdList, Event, Token
-
-NUMERIC_TYPES = (INT, FLOAT)
-TRUE = TExpr("true", BOOL, literal="1")
-FALSE = TExpr("false", BOOL, literal="0")
-
-
-# ----------------------------------------------------------------------------------------
-# Context shared by every handler of one file
-# ----------------------------------------------------------------------------------------
-
-@dataclass
-class Signature:
-    event: str
-    method: str
-    params: list[tuple[str, str]]       # (type, name), PARAM1 first
-    returns: str = "void"               # "string" when handlers use `return`
+from .context import FileContext, Signature
+from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, format_number, join, lit, negate, number_code,
+                     string_literal, truthy)
 
 
-@dataclass
-class Quirk:
-    file: str
-    line: int
-    message: str
-
-
-@dataclass
-class FileContext:
-    file: str                            # "items/base_miscitem"
-    class_name: str
-    inference: Inference
-    fields: dict[str, str]               # names readable as fields here -> type
-    dynamic_vars: set[str]               # variables that may exist at run time but are not fields here
-    signatures: "SignatureTable"
-    kind: str = "monster"
-    quirks: list[Quirk] = field(default_factory=list)
-    uses_loop_iteration: bool = False
-
-    def quirk(self, line: int, message: str) -> None:
-        self.quirks.append(Quirk(self.file, line, message))
-
-
-class SignatureTable:
-    """One signature per event name across the corpus (mixins of different scripts must agree)."""
-
-    def __init__(self, inference: Inference, events: list[str] | None = None):
-        self.inference = inference
-        self._cache: dict[str, Signature] = {}
-        # Method names must be unique per event name; assign them once, in a fixed order
-        self._methods: dict[str, str] = {}
-        taken: dict[str, str] = {}
-        for event in sorted(set(events or [])):
-            self._methods[event] = self._unique(event, taken)
-        self._taken = taken
-
-    @staticmethod
-    def _unique(event: str, taken: dict[str, str]) -> str:
-        method = names.event_method(event)
-        candidate, n = method, 2
-        while candidate in taken and taken[candidate] != event:
-            candidate, n = f"{method}{n}", n + 1
-        taken[candidate] = event
-        return candidate
-
-    def method_name(self, event: str) -> str:
-        if event not in self._methods:
-            self._methods[event] = self._unique(event, self._taken)
-        return self._methods[event]
-
-    def get(self, event: str) -> Signature:
-        if event in self._cache:
-            return self._cache[event]
-        spec = mapping.ENGINE_EVENTS.get(event)
-        count = max(self.inference.max_param.get(event, 0), len(spec.params) if spec else 0)
-        params: list[tuple[str, str]] = []
-        used: set[str] = set()
-        for index in range(1, count + 1):
-            type_ = STRING
-            pname = f"param{index}"
-            named_by_engine = False
-            if spec and index <= len(spec.params):
-                p = spec.params[index - 1]
-                type_ = STRING if p.type == "entity" else p.type
-                pname = p.name
-                named_by_engine = True
-            else:
-                type_ = self.inference.params.get((event, index), Evidence()).resolve({})
-                if type_ == BOOL:
-                    type_ = INT
-            counts = self.inference.param_names.get((event, index)) or self.inference.param_doc_names.get((event, index))
-            if counts and not named_by_engine:
-                best = max(counts.items(), key=lambda kv: kv[1])[0]
-                pname = names.local(best)
-            while pname in used or pname in names.AS_KEYWORDS:
-                pname += "_"
-            used.add(pname)
-            params.append((type_, pname))
-        returns = "string" if event in self.inference.returns else "void"
-        sig = Signature(event, self.method_name(event), params, returns)
-        self._cache[event] = sig
-        return sig
-
-
-# ----------------------------------------------------------------------------------------
-# Values
-# ----------------------------------------------------------------------------------------
-
-def string_literal(text: str) -> str:
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
-
-
-def lit(text: str) -> TExpr:
-    return TExpr(string_literal(text), STRING, ATOM, literal=text)
-
-
-def c_atof(text: str) -> float:
-    m = re.match(r"\s*[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?", text)
-    return float(m.group(0)) if m else 0.0
-
-
-def c_atoi(text: str) -> int:
-    m = re.match(r"\s*[+-]?\d+", text)
-    return int(m.group(0)) if m else 0
-
-
-def number_code(text: str, type_: str) -> str:
-    value = text.rstrip("%")
-    if value.startswith("."):
-        value = "0" + value
-    if value.startswith("-."):
-        value = "-0" + value[1:]
-    if value.startswith("+"):
-        value = value[1:]
-    if type_ == FLOAT:
-        if "." not in value:
-            return value + ".0f"
-        return (value + "0" if value.endswith(".") else value) + "f"
-    if type_ == INT and "." in value:
-        return str(int(float(value)))
-    return value
-
-
-def _format_number(value: float, type_: str) -> TExpr:
-    if type_ == INT:
-        code = str(int(value))
-    else:
-        code = repr(float(value))
-        code = (code if "e" not in code else f"{value:.6f}") + "f"
-    return TExpr(code, type_, UNARY if code.startswith("-") else ATOM, literal=code.rstrip("f"))
-
-
-def convert(e: TExpr, want: str | None) -> TExpr:
-    """Convert between AngelScript types the way .script would read the value."""
-    if want == "entity":
-        want = STRING
-    if want is None or want == e.type:
-        return e
-    t = e.type
-    if e.literal is not None:
-        folded = _fold_literal(e, want)
-        if folded is not None:
-            return folded
-    if want == STRING:
-        return TExpr(f"Text({e.code})", STRING)
-    if want == INT:
-        if t == FLOAT:
-            return TExpr(f"int({e.code})", INT)
-        if t == BOOL:
-            return TExpr(f"({e.code} ? 1 : 0)", INT)
-        if t == VECTOR:
-            return TExpr(f"Int(Text({e.code}))", INT)    # "(x,y,z)" reads as 0
-        return TExpr(f"Int({e.code})", INT)
-    if want == FLOAT:
-        if t == INT:
-            return TExpr(e.code, FLOAT, e.prec, e.literal)
-        if t == BOOL:
-            return TExpr(f"({e.code} ? 1.0f : 0.0f)", FLOAT)
-        if t == VECTOR:
-            return TExpr(f"Float(Text({e.code}))", FLOAT)  # "(x,y,z)" reads as 0
-        return TExpr(f"Float({e.code})", FLOAT)
-    if want == BOOL:
-        return truthy(e)
-    if want == VECTOR:
-        return TExpr(f"Vec({e.code if t == STRING else 'Text(' + e.code + ')'})", VECTOR)
-    return e
-
-
-def _fold_literal(e: TExpr, want: str) -> TExpr | None:
-    text = e.literal
-    if e.type == BOOL:
-        text = "1" if text == "1" else "0"
-    if want == STRING:
-        return lit(text)
-    if want == INT:
-        return _format_number(c_atoi(text), INT)
-    if want == FLOAT:
-        return _format_number(c_atof(text), FLOAT)
-    if want == BOOL:
-        return TRUE if c_atoi(text) != 0 else FALSE
-    return None
-
-
-def truthy(e: TExpr) -> TExpr:
-    """`if X` is atoi(X) != 0."""
-    if e.literal is not None:
-        return TRUE if c_atoi(e.literal) != 0 else FALSE
-    if e.type == BOOL:
-        return e
-    if e.type == INT:
-        return TExpr(f"{e.wrapped(COMPARE)} != 0", BOOL, EQUALITY)
-    if e.type == FLOAT:
-        return TExpr(f"int({e.code}) != 0", BOOL, EQUALITY)
-    if e.type == VECTOR:
-        return FALSE
-    return TExpr(f"Truthy({e.code})", BOOL)
-
-
-def negate(e: TExpr) -> TExpr:
-    if e.code == "true":
-        return FALSE
-    if e.code == "false":
-        return TRUE
-    m = re.fullmatch(r"(.+) (==|!=) (.+)", e.code)
-    if e.prec == EQUALITY and m and "&&" not in e.code and "||" not in e.code and " == " not in m.group(1):
-        op = "!=" if m.group(2) == "==" else "=="
-        return TExpr(f"{m.group(1)} {op} {m.group(3)}", BOOL, EQUALITY)
-    if e.code.startswith("!") and e.prec == UNARY:
-        inner = e.code[1:]
-        return TExpr(inner, BOOL, ATOM if inner.endswith(")") or re.fullmatch(r"\w+", inner) else UNARY)
-    return TExpr(f"!{e.wrapped(UNARY)}", BOOL, UNARY)
-
-
-def join(parts: list[TExpr], separator: str = "") -> TExpr:
-    """String concatenation; literals known now are merged, separators included."""
-    merged: list[TExpr] = []
-    for i, part in enumerate(parts):
-        if i and separator:
-            if merged and merged[-1].literal is not None and merged[-1].type == STRING:
-                merged[-1] = lit(merged[-1].literal + separator)
-            else:
-                merged.append(lit(separator))
-        if part.literal is not None and part.type != BOOL:
-            part = lit(part.literal)
-        if part.literal is not None and part.type == STRING and merged and merged[-1].literal is not None \
-                and merged[-1].type == STRING:
-            merged[-1] = lit(merged[-1].literal + part.literal)
-        else:
-            merged.append(part)
-    if not merged:
-        return lit("")
-    if len(merged) == 1:
-        return convert(merged[0], STRING)
-    # AngelScript adds left to right: numbers may stay numbers once the chain starts with text
-    out: list[str] = []
-    for i, part in enumerate(merged):
-        if part.type == STRING:
-            out.append(part.wrapped(ADD))
-        elif part.type in NUMERIC_TYPES and i > 0 and merged[0].type == STRING:
-            out.append(part.wrapped(MUL))
-        else:
-            out.append(convert(part, STRING).wrapped(ADD))
-    return TExpr(" + ".join(out), STRING, ADD)
-
-
-# ----------------------------------------------------------------------------------------
-# Handler lowering
 # ----------------------------------------------------------------------------------------
 
 class HandlerLowerer:
@@ -639,7 +378,7 @@ class HandlerLowerer:
                 return TRUE if c_atoi(expr.text) != 0 else FALSE
             if expr.text.endswith("%"):
                 if want in NUMERIC_TYPES:
-                    return _format_number(c_atof(expr.text), want)
+                    return format_number(c_atof(expr.text), want)
                 return lit(expr.text)
             t = want if want in NUMERIC_TYPES else (INT if expr.is_int else FLOAT)
             code = number_code(expr.text, t)
@@ -897,10 +636,11 @@ class HandlerLowerer:
         if name == "capvar":
             if len(args) < 3:
                 return []
-            t = target.type if target.type in NUMERIC_TYPES else FLOAT
-            lo, hi = self.value(args[1], t), self.value(args[2], t)
-            current = convert(target, t)
-            return [Line(f"{target.code} = {convert(TExpr(f'Clamp({current.code}, {lo.code}, {hi.code})', t), target.type).code}")]
+            # capvar works on floats like the other math commands
+            lo, hi = (self.value(a, FLOAT) for a in args[1:3])
+            current = convert(target, FLOAT)
+            clamped = TExpr(f"Clamp({current.code}, {lo.code}, {hi.code})", FLOAT)
+            return [Line(f"{target.code} = {convert(clamped, target.type).code}")]
         if len(args) < 2:
             self.ctx.quirk(cmd.line, f"`{name}` without an amount does nothing")
             return []
@@ -997,7 +737,7 @@ class HandlerLowerer:
         if not args:
             return []
         if name == "calleventtimed":
-            delay = self.value(args[1], FLOAT) if len(args) > 1 else _format_number(0, FLOAT)
+            delay = self.value(args[1], FLOAT) if len(args) > 1 else format_number(0, FLOAT)
             return [Line(f"CallEventDelayed({delay.code}, {self.text(args[0]).code})")]
         first = args[0]
         if isinstance(first, Number) and len(args) > 1:

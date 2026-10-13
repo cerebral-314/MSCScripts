@@ -23,8 +23,7 @@ AS_KEYWORDS = {
 }
 
 # Methods ScriptEntity already defines; event methods must not collide with them
-RESERVED_METHODS = {"OnLoad", "OnFirstThink", "Attach", "DispatchEvent", "GetLegacyVar", "SetLegacyVar",
-                    "CallEvent", "CallEventDelayed", "CallExternal", "Return", "LegacyCommand", "LegacyFunction"}
+RESERVED_METHODS = {"OnLoad", "OnFirstThink", "Attach", "DispatchEvent", "CallEvent", "CallEventDelayed", "CallExternal", "Return", "LegacyCommand", "LegacyFunction"}
 
 _WORD = re.compile(r"[A-Za-z0-9]+")
 

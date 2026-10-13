@@ -30,15 +30,15 @@ as_check --config <MasterSwordRebirth>/utils/as_check/config/as_config_server.tx
          --root ../scripts/angelscript --quiet --list converted.txt
 ```
 
-Only spawnable scripts (files with a `[script "…"]` class) need checking; included files are mixins and
-are compiled as part of every script that uses them.
+Every converted file has a `[script "…"]` class, so the check compiles all of them. `check` keeps the
+modules of one process alive, as the game does, so the shared classes are compiled once.
 
 ## What the output looks like
 
 | .script | AngelScript |
 |---|---|
-| A file other scripts `#include` | `mixin class BaseNpc { … }` — its variables and handlers (`BaseNpc_OnGameSpawn()`) |
-| A file nothing includes | `[script "monsters/orc_flayer"] class OrcFlayer : ScriptEntity, OrcBase, BaseNpc, …` |
+| A file other scripts `#include` | `mixin class BaseNpc { … }` — its variables and handlers (`BaseNpc_OnGameSpawn()`) — and `[script "monsters/base_npc"] shared class BaseNpcScript : ScriptEntity, BaseNpc, …` |
+| A file nothing includes | `[script "monsters/orc_flayer"] class OrcFlayer : OrcBaseScript, …` |
 | `{ game_spawn … }` | `void OnGameSpawn()` calling every included file's handler in the engine's order, then its own body |
 | `const X 5` / `setvard X 1` | field `int X = 5;` / `X = 1;` — names stay as in .script |
 | `local L_ITEM PARAM2` | parameter or local `item` (camelCase, `L_` dropped) |
@@ -48,8 +48,38 @@ are compiled as part of every script that uses them.
 | `$get(ent,hp)`, `$rand(1,5)` | `HealthOf(ent)`, `RandomInt(1, 5)` |
 | commands | typed wrappers (`SetName("Bertold")`, `PlaySound(…)`) or `LegacyCommand("cmd", {…})` |
 
-Each spawnable class ends with a generated section: `OnLoad` (precaching, timers), `OnFirstThink`
-(unnamed blocks), `DispatchEvent` (events by `.script` name) and `Get/SetLegacyVar` (variables by name).
+### Classes
+
+Every file has a `[script "…"]` class: what the engine creates when that script spawns.
+
+* A library's is `shared`, so AngelScript compiles it once and every script module uses that copy.
+  It is what spawns when the library itself is spawned (`monsters/orc_base` is both spawned and
+  included), and it is the base class of the scripts that include the library.
+* A class derives from the shared class of its biggest include whose own includes are all part of
+  this script's, and mixes in the rest of its files. Library code is therefore compiled once per
+  server instead of once per script: a monster that shares its include stack with others compiles in
+  about a third of the time it took with mixins alone.
+* Fields it inherits are not declared again. Where this script's include order gives one a different
+  starting value (a constant this script defines first, for example), the constructor sets it.
+
+### Engine wiring
+
+Each class ends with a generated section that connects it to the engine:
+
+* A library's mixin declares each event method as it runs in a script that includes the library
+  (`void OnGameSpawn() { BaseNpc_OnGameSpawn(); }`) and a `BaseNpc_DispatchEvent` for its own events.
+* A class gets each event method from its own body, else the first of its mixins that declares it
+  (AngelScript keeps the first mixin's method, and a mixin's method overrides an inherited one), else
+  its base class. It declares one only where that would run something else in this script.
+* `OnLoad` (precaching, timers), `OnFirstThink` (unnamed blocks) and `DispatchEvent` (its own events
+  by `.script` name, then each mixin's dispatcher, then the base class's) appear where they differ from
+  what the class inherits.
+
+Variables need no generated code: the engine reads and writes fields by name, and the fields keep
+their `.script` names.
+
+Text keeps its bytes: scripts are Latin-1, and string constants write anything outside printable
+ASCII as `\xHH`, which AngelScript stores as that exact byte.
 
 ## How it works
 
@@ -59,14 +89,17 @@ Each spawnable class ends with a generated section: `OnLoad` (precaching, timers
 | `loader.py` | Port of `CScript::Spawn` for one script: include order, `#scope` leaks, `[override]`, first-wins `const` |
 | `infer.py` | Picks a type per variable (int/float/bool/string/Vector3) from how the whole corpus uses it |
 | `lower.py`, `ir.py`, `emit.py` | One handler → one method, with `Script_ExecuteCmds` control flow and readable output |
-| `generate.py` | Files → mixins / classes, event composition, engine wiring |
+| `values.py`, `context.py` | Typed values and the interpreter's implicit conversions; per-file context and event signatures |
+| `generate.py` | Files → mixins, fields, handlers, load-time work |
+| `entity.py` | Each file's `[script]` class: its base class, mixins, inherited fields and constructor |
+| `wiring.py` | Which event methods each class declares, what they run, dispatch by `.script` name |
 | `mapping.py` | Commands, `$functions`, `$get` properties, engine events → AngelScript (single source of truth) |
 | `runtime_gen.py` | Writes `runtime/Commands.as` and `runtime/Functions.as` from `mapping.py` |
 | `extract_engine_tables.py` | Refreshes `data/engine_tables.json` (which commands each entity type accepts) from the C++ |
 
 The runtime the output relies on lives in `scripts/angelscript/runtime/`: `ScriptEntity.as` (base class),
 `Legacy.as` (text/number conversions and token lists that behave like the interpreter), and the two
-generated wrapper files.
+generated wrapper files. All of it is `shared`, because the libraries' shared classes call it.
 
 ## Making the output more readable
 
