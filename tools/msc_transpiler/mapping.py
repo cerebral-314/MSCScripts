@@ -300,7 +300,7 @@ FUNCTIONS: dict[str, FunctionSpec] = {
 
 # $get(<entity>, <property>) - typed helpers (ScriptEntity methods); others use GetProp(e, "prop")
 GET_PROPERTIES: dict[str, tuple[str, str]] = {
-    "id": ("IdOf", "entity"),
+    "id": ("EntityOf", "entity"),
     "origin": ("OriginOf", "Vector3"),
     "angles": ("AnglesOf", "Vector3"),
     "velocity": ("VelocityOf", "Vector3"),
@@ -409,15 +409,15 @@ ENGINE_EVENTS: dict[str, EventSpec] = {
     "game_dodamage": E("string hit, entity target, Vector3 start, Vector3 end, string damageType, float damage"),
     "game_heardsound": E("string soundType, Vector3 origin, float dangerRadius"),
     "game_heardtext": E("string text, entity speaker"),
-    "game_menu_getoptions": E("entity player"),
-    "game_menu_cancel": E("entity player"),
-    "game_playerused": E("entity player"),
+    "game_menu_getoptions": E("player player"),
+    "game_menu_cancel": E("player player"),
+    "game_playerused": E("player player"),     # CMSMonster::Used ignores anything but players
     "game_touch": E("entity other"),
     "game_blocked": E("entity other"),
-    "game_restricted": E("entity player"),
-    "game_targeted_by_player": E("entity player"),
-    "game_killed_player": E("entity player"),
-    "game_gave_player": E("entity player, entity item"),
+    "game_restricted": E("player player"),
+    "game_targeted_by_player": E("player player"),
+    "game_killed_player": E("player player"),
+    "game_gave_player": E("player player, entity item"),
     "game_projectile_hitnpc": E("entity target"),
     "game_wear": E("string race, string gender, string source"),
     "game_parry": E("entity attacker, float damage, string damageType, float parryRoll, float accuracyRoll, float parryValue"),

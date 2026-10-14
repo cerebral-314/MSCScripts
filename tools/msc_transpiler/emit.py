@@ -130,8 +130,9 @@ def emit_block(stmts: list[Stmt], depth: int) -> list[str]:
             lines.append("")
         lines.extend(_comment_lines(stmt.comments, indent))
         if isinstance(stmt, Append):
-            # string += accepts numbers directly; bools and vectors need .script's text form
-            value = stmt.value.code if stmt.value.type in ("string", "int", "float") else f"Text({stmt.value.code})"
+            from .values import convert
+            # string += writes whole numbers as .script does; other values need their .script text
+            value = stmt.value.code if stmt.value.type in ("string", "int") else convert(stmt.value, "string").code
             lines.append(f"{indent}{stmt.target} += {value};{_trail(stmt)}")
         elif isinstance(stmt, Line):
             lines.append(f"{indent}{stmt.code};{_trail(stmt)}" if not stmt.code.endswith("}") else f"{indent}{stmt.code}{_trail(stmt)}")

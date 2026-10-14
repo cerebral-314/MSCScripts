@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 from . import mapping
 from .corpus import normalize
-from .infer import BOOL, FLOAT, INT, STRING, VECTOR
+from .infer import BOOL, ENTITY, FLOAT, INT, PLAYER, STRING, VECTOR
 from .ir import If, Line, Method, Return, Stmt, TExpr
 from .values import convert, missing_param, string_literal
 
@@ -257,6 +257,10 @@ def _origin(file: str, owner: str) -> str:
 
 
 def _param_from_array(t: str, i: int) -> str:
+    if t == ENTITY:
+        return f"EntityParam(params, {i})"
+    if t == PLAYER:
+        return f"PlayerParam(params, {i})"
     raw = f"Param(params, {i})"
     return raw if t == STRING else convert(TExpr(raw, STRING), t).code
 

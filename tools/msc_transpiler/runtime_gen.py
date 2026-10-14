@@ -30,8 +30,9 @@ HEADER = """\
 // eval (a token such as game.time), output (a command that writes its result into a variable),
 // local / var (set an event local / a script variable), event (callevent), call ($func).
 // Arguments: {n} is parameter n, {n.x} a vector component, {...} the variadic arguments.
-// `const ?&in` takes a value of any type: entities (or their id text, or names such as ent_me),
-// numbers, vectors and text are all passed the way .script would write them."""
+// An entity parameter comes twice: CBaseEntity@ (any entity handle; a CBasePlayer@ converts) and
+// const string &in (an id, or a name such as ent_lastseen). `const ?&in` takes a value of any type
+// (numbers, vectors, text, `@entity`), written the way .script would write it."""
 
 # Things every converted script uses that are not in mapping.py's tables
 GENERAL = [
@@ -41,7 +42,7 @@ GENERAL = [
         ("callevent <value> ...: a number delays the call, anything else is the event name",
          "void CallEventOrDelay(const ?&in first, const ?&in ...)", "command callevent {1} {...}"),
         ("callexternal <target> <name> [params] - an event on another entity's scripts (or all, players, gamemaster)",
-         "void CallExternal(const ?&in target, const string &in name, const ?&in ...)",
+         "void CallExternal($ENTITY target, const string &in name, const ?&in ...)",
          "command callexternal {1} {2} {...}"),
         ("$func(<name>, params...) - what the event returns",
          "string CallFunction(const string &in name, const ?&in ...)", "call {1} {...}"),
@@ -56,7 +57,7 @@ GENERAL = [
     ]),
     ("Entities", [
         ("$get(<entity>,<property>[,<option>...])",
-         "string GetProp(const ?&in entity, const string &in prop, const ?&in ...)", "function get {1} {2} {...}"),
+         "string GetProp($ENTITY entity, const string &in prop, const ?&in ...)", "function get {1} {2} {...}"),
     ]),
     ("Anything without a function of its own", [
         ("a .script command with evaluated arguments",
@@ -67,18 +68,28 @@ GENERAL = [
 ]
 
 
+ENTITY_PARAM = "$ENTITY"       # expanded into the handle and the text overload (see entity_overloads)
+
+
 def param_decl(type_: str, name: str = "") -> str:
-    """The AngelScript parameter for a mapping type. Entities take any value: a handle, an id or a
-    name such as ent_lastseen."""
+    """The AngelScript parameter for a mapping type."""
     if type_ == "...":
         return "const ?&in ..."
-    decl = {"string": "const string &in", "text": "const string &in", "entity": "const ?&in",
+    decl = {"string": "const string &in", "text": "const string &in", "entity": ENTITY_PARAM,
             "Vector3": "const Vector3 &in"}.get(type_, type_)
     return f"{decl} {name}" if name else decl
 
 
+def entity_overloads(line: str) -> list[str]:
+    """A declaration with an entity parameter, once taking a handle and once taking text. (A handle
+    passed to `const ?&in` would be dereferenced, so a null one could not be passed.)"""
+    if ENTITY_PARAM not in line:
+        return [line]
+    return [line.replace(ENTITY_PARAM, "CBaseEntity@"), line.replace(ENTITY_PARAM, "const string &in")]
+
+
 def return_decl(type_: str) -> str:
-    return {"entity": "string", "text": "string"}.get(type_, type_)
+    return {"entity": "CBaseEntity@", "text": "string"}.get(type_, type_)
 
 
 def without_variadic(decl: str, action: str) -> tuple[str, str] | None:
@@ -136,12 +147,12 @@ def _property_lines() -> list[str]:
         if method in done:
             continue        # isalive and alive are the same property
         done.add(method)
-        lines.append(f"{return_decl(type_)} {method}(const ?&in entity) | function get {{1}} {prop}")
+        lines.append(f"{return_decl(type_)} {method}({ENTITY_PARAM} entity) | function get {{1}} {prop}")
     for prop, (method, type_) in mapping.GET_PROPERTIES_ARG.items():
-        lines.append(f"{return_decl(type_)} {method}(const ?&in entity, const ?&in name) "
+        lines.append(f"{return_decl(type_)} {method}({ENTITY_PARAM} entity, const ?&in name) "
                      f"| function get {{1}} {prop} {{2}}")
     for prefix, (method, type_) in mapping.GET_PREFIXED.items():
-        lines.append(f"{return_decl(type_)} {method}(const ?&in entity, const string &in name) "
+        lines.append(f"{return_decl(type_)} {method}({ENTITY_PARAM} entity, const string &in name) "
                      f"| function get {{1}} {prefix}{{2}}")
     return lines
 
@@ -177,7 +188,7 @@ def api_file() -> str:
     section("$functions", _function_lines())
     section("$get(<entity>,<property>)", _property_lines())
     section("Values", _value_lines())
-    return "\n".join(out) + "\n"
+    return "\n".join(expanded for line in out for expanded in entity_overloads(line)) + "\n"
 
 
 def api_names() -> set[str]:

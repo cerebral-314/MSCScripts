@@ -24,7 +24,7 @@ def _load_param_names() -> dict[str, dict[str, str]]:
         return json.loads(PARAM_NAMES.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-from .infer import BOOL, FLOAT, INT, STRING, Evidence, Inference
+from .infer import BOOL, FLOAT, INT, STRING, Evidence, Inference, handle_type
 
 
 # ----------------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ class SignatureTable:
             named_by_engine = False
             if spec and index <= len(spec.params):
                 p = spec.params[index - 1]
-                type_ = STRING if p.type == "entity" else p.type
+                type_ = handle_type(p.type) or p.type
                 pname = p.name
                 named_by_engine = True
             else:

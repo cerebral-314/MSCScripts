@@ -19,20 +19,22 @@ import re
 
 from . import mapping, names
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token, source_text
-from .infer import BOOL, FLOAT, INT, MATH_COMMANDS, STRING, VECTOR, Evidence, literal_type
+from .infer import (BOOL, ENTITY, FLOAT, HANDLES, INT, MATH_COMMANDS, PLAYER, STRING, VECTOR, Evidence, handle_type,
+                    literal_type)
 from .ir import (ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Assign, Comment, For, If, Line, Method,
                  Return, Stmt, TExpr)
 from .syntax import Cmd, CmdList, Event, Token
 from .context import FileContext, Signature
 from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, float_arg, format_number, join, lit,
                      missing_param, negate, number_code, string_literal, truthy)
+from .calls import EventCalls
 from .split import SplitLocals
 from .updates import UpdateCommands, _cmd_source
 
 
 # ----------------------------------------------------------------------------------------
 
-class HandlerLowerer(UpdateCommands, SplitLocals):
+class HandlerLowerer(UpdateCommands, SplitLocals, EventCalls):
     def __init__(self, ctx: FileContext, event: Event, signature: Signature | None, method_name: str):
         self.ctx = ctx
         self.event = event
@@ -205,6 +207,9 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             ev.ints += 1
         elif t == BOOL:
             ev.bools += 1
+        elif t in HANDLES:
+            ev.entities += 1
+            ev.players += t == PLAYER
 
     def _declare_early(self, legacy: str) -> None:
         """A local read or assigned before a top-level assignment: declare it at the top of the
@@ -220,6 +225,8 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         self.declared.add(legacy)
         if legacy in self.ctx.fields:
             init = convert(TExpr(names.variable(legacy), self.ctx.fields[legacy]), t)
+        elif t in HANDLES:
+            init = TExpr("null", t)       # its name is no entity
         else:
             init = convert(lit(legacy), t)
         self.top_declarations.append(Line(f"{t} {ident} = {init.code}", declares=True,
@@ -377,6 +384,8 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             self.ctx.quirk(cmd.line, f"unknown comparison '{op}' is treated as `equals`")
         cop = string_ops.get(op, "==")
         lv, rv = self.value(left), self.value(right)
+        if lv.type in HANDLES or rv.type in HANDLES:
+            return _entity_compare(lv, rv, cop)
         # equals compares text; a typed number against a number literal compares as numbers
         if lv.type in NUMERIC_TYPES + (BOOL,) and isinstance(right, Number):
             t = INT if lv.type == BOOL else lv.type
@@ -406,6 +415,10 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             if op in ("startswith", "!startswith", "contains", "!contains") and value is right:
                 continue        # `PARAM startswith X` tests something else
             v = self.value(value)
+            if v.type in HANDLES:
+                # the engine always passes its entities: an omitted one is none
+                test = "!is" if op in ("isnot", "!equals", "!startswith", "!contains") else "is"
+                return TExpr(f"{v.code} {test} null", BOOL, EQUALITY)
             if v.type != STRING:
                 return None
             empty = TExpr(f"{v.wrapped(ATOM)}.isEmpty()", BOOL)
@@ -426,10 +439,18 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
     def arg(self, expr: Expr) -> TExpr:
         """A value for a parameter that takes any type (`const ?&in`): the engine writes it as .script
         text, so it keeps its own type. A number literal the engine would write differently (50%,
-        +5, 007) stays text."""
+        +5, 007) stays text; an entity is passed as a handle (`@target`, which may be null)."""
         if isinstance(expr, Number) and not _plain_number(expr):
             return lit(expr.text)
-        return self.value(expr)
+        e = self.value(expr)
+        if e.type in HANDLES and e.code != "self":
+            return TExpr(f"@{e.wrapped(UNARY)}", e.type, UNARY)
+        return e
+
+    def entity(self, expr: Expr) -> TExpr:
+        """A value for an entity parameter (a handle, or text: an id or a name such as ent_lastseen)."""
+        e = self.value(expr)
+        return e if e.type in HANDLES else convert(e, STRING)
 
     def args(self, exprs: list[Expr]) -> str:
         """`, a, b, c` for the variadic part of a call (empty when there is none)."""
@@ -530,11 +551,11 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             x, y, z = (float_arg(self.value(a, FLOAT)) for a in args)
             converted = [TExpr(f"Vector3({x}, {y}, {z})", VECTOR)]
         elif spec and len(args) == len(spec.params):      # never drop an argument
-            converted = [self.value(a, p) for a, p in zip(args, spec.params)]
+            converted = [self.entity(a) if p == "entity" else self.value(a, p) for a, p in zip(args, spec.params)]
         else:
             converted = None
         if converted is not None and (spec.template or spec.method):
-            returns = STRING if spec.returns == "entity" else spec.returns
+            returns = handle_type(spec.returns) or spec.returns
             if spec.template:
                 code = spec.template
                 call = re.match(r"\w+\(", code) is not None      # Vector3(...), Random(...)
@@ -552,12 +573,17 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         return TExpr(f"LegacyFunction({string_literal(name[1:])}{self.args(args)})", STRING)
 
     def _get_property(self, args: list[Expr]) -> TExpr:
-        entity = self.arg(args[0])
+        entity = self.entity(args[0])
         prop = args[1].text
         if isinstance(args[1], Name) and (param_index(prop) or prop in self.locals or prop in self.ctx.fields
                                           or prop in self.ctx.dynamic_vars):
             return TExpr(f"GetProp({entity.code}, {self.text(args[1]).code}{self.args(args[2:])})", STRING)
         lower = prop.lower()
+        if lower == "id" and len(args) == 2:
+            if isinstance(args[0], Name) and args[0].text.lower() == "ent_me":
+                return TExpr("self", ENTITY)
+            if entity.type in HANDLES:
+                return entity
         base, _, component = lower.partition(".")
         if len(args) == 2 and component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
             return TExpr(f"{mapping.GET_VECTOR_COMPONENTS[base]}({entity.code}).{mapping.COMPONENTS[component]}", FLOAT)
@@ -567,25 +593,14 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
                     return TExpr(f"{method}({entity.code}, {string_literal(prop[len(prefix):])})", t)
         if len(args) == 2 and lower in mapping.GET_PROPERTIES:
             method, t = mapping.GET_PROPERTIES[lower]
-            return TExpr(f"{method}({entity.code})", STRING if t == "entity" else t)
+            return TExpr(f"{method}({entity.code})", handle_type(t) or t)
         if len(args) == 3 and lower in mapping.GET_PROPERTIES_ARG:
             method, t = mapping.GET_PROPERTIES_ARG[lower]
-            return TExpr(f"{method}({entity.code}, {self.arg(args[2]).code})", STRING if t == "entity" else t)
+            return TExpr(f"{method}({entity.code}, {self.arg(args[2]).code})", handle_type(t) or t)
         tail = self.args(args[2:])
         if lower.endswith((".x", ".y", ".z")) or lower.startswith(("origin.", "angles.", "velocity.")):
             return TExpr(f"Float(GetProp({entity.code}, {string_literal(prop)}{tail}))", FLOAT)
         return TExpr(f"GetProp({entity.code}, {string_literal(prop)}{tail})", STRING)
-
-    def _func_call(self, args: list[Expr]) -> TExpr:
-        target, rest = args[0], args[1:]
-        if isinstance(target, Name) and self._event_target(target) is not None:
-            sig = self.ctx.signatures.get(target.text)
-            if sig.returns == "string":
-                return TExpr(f"{sig.method}({', '.join(self._event_args(sig, rest))})", STRING)
-        return TExpr(f"CallFunction({self.text(target).code}{self.args(rest)})", STRING)
-
-    def _event_args(self, sig: Signature, args: list[Expr]) -> list[str]:
-        return [self.value(a, t).code for (t, _), a in zip(sig.params, args)]
 
     # -- commands ------------------------------------------------------------------------
 
@@ -654,110 +669,6 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             return self._token(cmd, name, tokens, args)
         return self._mapped_command(cmd, name, tokens, args)
 
-    # events --------------------------------------------------------------------------------
-
-    def _event_target(self, expr: Expr) -> str | None:
-        if isinstance(expr, Name) and expr.text not in self.locals and not param_index(expr.text) \
-                and expr.text not in self.ctx.fields and expr.text not in self.ctx.dynamic_vars \
-                and not expr.text.lower().startswith(("game.", "const.", "ent_")):
-            return expr.text
-        return None
-
-    def _callevent(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if not args:
-            return []
-        if name == "calleventtimed":
-            delay = self.value(args[1], FLOAT) if len(args) > 1 else format_number(0, FLOAT)
-            return [Line(f"CallEventDelayed({delay.code}, {self.text(args[0]).code})")]
-        first = args[0]
-        if isinstance(first, Number) and len(args) > 1:
-            if len(args) > 2:
-                self.ctx.quirk(cmd.line, "parameters of a delayed callevent are dropped by the engine")
-            return [Line(f"CallEventDelayed({self.value(first, FLOAT).code}, {self.text(args[1]).code})")]
-        event = self._event_target(first)
-        if event is not None:
-            if event == self.event_name:
-                self.ctx.quirk(cmd.line, f"callevent {event} inside {event} is ignored by the engine")
-                return [Comment(f"(no effect in .script: an event cannot call itself) callevent {event}")]
-            sig = self.ctx.signatures.get(event)
-            return [Line(f"{sig.method}({', '.join(self._event_args(sig, args[1:]))})")]
-        first_value = self.value(first)
-        if len(args) > 1 and (first_value.type in (INT, FLOAT) or first_value.numeric is not None):
-            # a number (not negative) starts with a digit: the engine takes it as a delay
-            if len(args) > 2:
-                self.ctx.quirk(cmd.line, "parameters of a delayed callevent are dropped by the engine")
-            return [Line(f"CallEventDelayed({convert(first_value, FLOAT).code}, {self.text(args[1]).code})")]
-        # The engine decides at run time: a first argument starting with a digit is a delay
-        return [Line(f"CallEventOrDelay({self.arg(first).code}{self.args(args[1:])})")]
-
-    def _calleventloop(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if len(args) < 2:
-            return []
-        rest = args[1:]
-        event = self._event_target(rest[0]) if not isinstance(rest[0], Number) else None
-        if event is None:
-            if isinstance(rest[0], Number):
-                self.ctx.quirk(cmd.line, "calleventloop with a delay")
-            return [Line(f'LegacyCommand("calleventloop"{self.args(args)})')]
-        if event == self.event_name:
-            self.ctx.quirk(cmd.line, f"calleventloop {event} inside {event} is ignored by the engine")
-            return [Comment(f"(no effect in .script: an event cannot call itself) {_cmd_source(cmd)}")]
-        return self._loop(self.value(args[0], INT), event, rest[1:])
-
-    def _loop(self, count: TExpr, event: str, params: list[Expr]) -> list[Stmt]:
-        """calleventloop: the event runs `count` times (counted once, before the first run), each run
-        seeing its index as game.script.iteration (loopIteration); `breakloop` stops it. The index of
-        a loop this one runs inside is put back afterwards, as the engine does."""
-        sig = self.ctx.signatures.get(event)
-        self.ctx.uses_loop_iteration = True
-        taken = {ident for ident, _ in self.locals.values()} | {n for n, _ in self.params.values()}
-        index = next(n for n in ("i", "n", "iteration", "loopIndex") if n not in taken)
-        out: list[Stmt] = []
-        if count.literal is None and not (count.code in taken and names.is_identifier(count.code)):
-            name = next(n for n in ("count", "loops", "loopCount") if n not in taken and n != index)
-            out.append(self._loop_local(name, count.code))
-            count = TExpr(name, INT)
-        body: list[Stmt] = [Line(f"loopIteration = {index}"),
-                            Line(f"{sig.method}({', '.join(self._event_args(sig, params))})")]
-        if self.ctx.inference.breaks_loop(event):
-            body.append(If(TExpr("breakLoop", BOOL), [Line("breakLoop = false"), Line("break")]))
-        loop = For(f"int {index} = 0; {index} < {count.code}; {index}++", body)
-        if self.event_name not in self.ctx.inference.loop_events:
-            return out + [loop]
-        outer = next(n for n in ("outerIteration", "outerLoopIteration") if n not in taken)
-        return out + [self._loop_local(outer, "loopIteration"), loop, Line(f"loopIteration = {outer}")]
-
-    def _loop_local(self, name: str, value: str) -> Line:
-        """`int name = value` the first time; later loops of the handler reuse the variable. One first
-        needed inside a block is declared at the top of the method, so later loops anywhere see it."""
-        if name in self.loop_counts:
-            return Line(f"{name} = {value}")
-        self.loop_counts.add(name)
-        if self.depth == 0:
-            return Line(f"int {name} = {value}", declares=True)
-        self.top_declarations.append(Line(f"int {name}", declares=True))
-        return Line(f"{name} = {value}")
-
-    def _callexternal(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if len(args) < 2:
-            return []
-        if isinstance(args[1], Number):
-            return [Line(f'LegacyCommand("callexternal"{self.args(args)})')]
-        target = self.arg(args[0])
-        event = lit(args[1].text) if self._event_target(args[1]) is not None else self.text(args[1])
-        return [Line(f"CallExternal({target.code}, {event.code}{self.args(args[2:])})")]
-
-    def _return(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if self.returns != "string":
-            return [Line(f"Return({join([self.value(a) for a in args], ' ').code})")]
-        if len(tokens) == 1 and tokens[0].text == "**clear":
-            return [Line('result = ""')]
-        if tokens and tokens[0].text == "**clear**":
-            self.ctx.quirk(cmd.line, "`return **clear**` is not a clear (the engine expects `**clear`); "
-                                     "it adds the text **clear** to the result")
-        value = join([self.value(a) for a in args], " ")
-        return [Line(f"result = AppendResult(result, {value.code})")]
-
     # mapped commands -----------------------------------------------------------------------
 
     def _mapped_command(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
@@ -786,7 +697,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         required = len([p for p in fixed if not p.optional])
         if len(args) < required or (not rest_type and len(args) > len(fixed)):
             return None
-        out = [self.arg(a).code if p.type == "entity" else
+        out = [self.entity(a).code if p.type == "entity" else
                float_arg(self.value(a, p.type)) if p.type == FLOAT else self.value(a, p.type).code
                for p, a in zip(fixed, args)]
         rest = args[len(fixed):]
@@ -848,6 +759,18 @@ def _branch_assigns_first(stmts: list[Stmt], ident: str, word) -> bool:
 
 
 _MISSING_MARKER = re.compile(r"PARAM\d*")
+
+
+def _entity_compare(lv: TExpr, rv: TExpr, cop: str) -> TExpr:
+    """equals with an entity: two entities are the same one when their ids are equal (`is`); "0" and
+    "" are what the engine gives for no entity; anything else compares as text, the entity as its id."""
+    if lv.type in HANDLES and rv.type in HANDLES:
+        return TExpr(f"{lv.code} {'is' if cop == '==' else '!is'} {rv.code}", BOOL, EQUALITY)
+    entity, other = (lv, rv) if lv.type in HANDLES else (rv, lv)
+    if other.literal in ("0", ""):
+        return TExpr(f"{entity.code} {'is' if cop == '==' else '!is'} null", BOOL, EQUALITY)
+    left, right = convert(lv, STRING), convert(rv, STRING)
+    return TExpr(f"{left.wrapped(ADD)} {cop} {right.wrapped(ADD)}", BOOL, EQUALITY)
 
 
 def _plain_number(number: Number) -> bool:

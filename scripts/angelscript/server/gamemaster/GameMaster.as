@@ -997,7 +997,8 @@ void GameThink() // This will be moved and renamed in the future
 /**
  * Called when a player selects an option from the vote menu
  * This is called by the C++ menu system when MOT_CALLBACK type menus are selected
- * @param szPlayerEntity Entity string for the player (format: "ent:#index")
+ * @param szPlayerEntity The player as a .script entity id (PentP(index,address)), as every menu
+ *        callback gets it
  * @param szOptionData The Data field from the menu option (option title in vote menus)
  */
 void game_vote_menu_callback(const string &in szPlayerEntity, const string &in szOptionData)
@@ -1005,50 +1006,14 @@ void game_vote_menu_callback(const string &in szPlayerEntity, const string &in s
     LogMessage("[ANGELSCRIPT] game_vote_menu_callback called!");
     LogMessage("[ANGELSCRIPT]   Player Entity: " + szPlayerEntity);
     LogMessage("[ANGELSCRIPT]   Option Data: " + szOptionData);
-    
-    // Extract player entity index from format "ent:#index"
-    if (szPlayerEntity.length() < 4 || szPlayerEntity.substr(0, 4) != "ent:")
-    {
-        LogMessage("[ANGELSCRIPT] ERROR: Invalid player entity format: " + szPlayerEntity);
-        return;
-    }
-    
-    // Parse entity index
-    int entityIndex = -1;
-    string indexStr = szPlayerEntity.substr(4); // Skip "ent:"
-    
-    // Convert string to int manually since we don't have atoi in AngelScript
-    for (uint i = 0; i < indexStr.length(); i++)
-    {
-        uint8 c = indexStr[i];
-        if (c >= 48 && c <= 57) // '0' to '9'
-        {
-            if (entityIndex == -1)
-                entityIndex = 0;
-            entityIndex = entityIndex * 10 + int(c - 48);
-        }
-        else
-        {
-            break;
-        }
-    }
-    
-    if (entityIndex < 0)
-    {
-        LogMessage("[ANGELSCRIPT] ERROR: Could not parse entity index from: " + szPlayerEntity);
-        return;
-    }
-    
-    LogMessage("[ANGELSCRIPT] Parsed entity index: " + formatInt(entityIndex));
-    
-    // Get the player from the entity index
-    CBasePlayer@ pPlayer = PlayerByIndex(entityIndex);
+
+    CBasePlayer@ pPlayer = StringToPlayer(szPlayerEntity);
     if (pPlayer is null)
     {
-        LogMessage("[ANGELSCRIPT] ERROR: Could not find player at index " + formatInt(entityIndex));
+        LogMessage("[ANGELSCRIPT] ERROR: No player for entity " + szPlayerEntity);
         return;
     }
-    
+
     string playerSteamID = GetSteamID(pPlayer);
     string playerName = GetDisplayName(pPlayer);
     

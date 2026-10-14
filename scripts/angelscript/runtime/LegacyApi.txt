@@ -9,8 +9,9 @@
 // eval (a token such as game.time), output (a command that writes its result into a variable),
 // local / var (set an event local / a script variable), event (callevent), call ($func).
 // Arguments: {n} is parameter n, {n.x} a vector component, {...} the variadic arguments.
-// `const ?&in` takes a value of any type: entities (or their id text, or names such as ent_me),
-// numbers, vectors and text are all passed the way .script would write them.
+// An entity parameter comes twice: CBaseEntity@ (any entity handle; a CBasePlayer@ converts) and
+// const string &in (an id, or a name such as ent_lastseen). `const ?&in` takes a value of any type
+// (numbers, vectors, text, `@entity`), written the way .script would write it.
 
 // ---- Events ------------------------------------------------------------------------------------
 
@@ -21,8 +22,10 @@ void CallEvent(const string &in name, const ?&in ...) | event {1} {...}
 void CallEventOrDelay(const ?&in first) | command callevent {1}
 void CallEventOrDelay(const ?&in first, const ?&in ...) | command callevent {1} {...}
 // callexternal <target> <name> [params] - an event on another entity's scripts (or all, players, gamemaster)
-void CallExternal(const ?&in target, const string &in name) | command callexternal {1} {2}
-void CallExternal(const ?&in target, const string &in name, const ?&in ...) | command callexternal {1} {2} {...}
+void CallExternal(CBaseEntity@ target, const string &in name) | command callexternal {1} {2}
+void CallExternal(const string &in target, const string &in name) | command callexternal {1} {2}
+void CallExternal(CBaseEntity@ target, const string &in name, const ?&in ...) | command callexternal {1} {2} {...}
+void CallExternal(const string &in target, const string &in name, const ?&in ...) | command callexternal {1} {2} {...}
 // $func(<name>, params...) - what the event returns
 string CallFunction(const string &in name) | call {1}
 string CallFunction(const string &in name, const ?&in ...) | call {1} {...}
@@ -39,8 +42,10 @@ void SetLocal(const string &in name, const ?&in value) | local {1} {2}
 // ---- Entities ----------------------------------------------------------------------------------
 
 // $get(<entity>,<property>[,<option>...])
-string GetProp(const ?&in entity, const string &in prop) | function get {1} {2}
-string GetProp(const ?&in entity, const string &in prop, const ?&in ...) | function get {1} {2} {...}
+string GetProp(CBaseEntity@ entity, const string &in prop) | function get {1} {2}
+string GetProp(const string &in entity, const string &in prop) | function get {1} {2}
+string GetProp(CBaseEntity@ entity, const string &in prop, const ?&in ...) | function get {1} {2} {...}
+string GetProp(const string &in entity, const string &in prop, const ?&in ...) | function get {1} {2} {...}
 
 // ---- Anything without a function of its own ----------------------------------------------------
 
@@ -137,18 +142,26 @@ void PlayOwnerAnim(const ?&in ...) | command playowneranim {...}
 // playviewanim - View model animation
 void PlayViewAnim(int anim) | command playviewanim {1}
 // setviewmodelprop - View model property
-void SetViewModelProp(const ?&in item) | command setviewmodelprop {1}
-void SetViewModelProp(const ?&in item, const ?&in ...) | command setviewmodelprop {1} {...}
+void SetViewModelProp(CBaseEntity@ item) | command setviewmodelprop {1}
+void SetViewModelProp(const string &in item) | command setviewmodelprop {1}
+void SetViewModelProp(CBaseEntity@ item, const ?&in ...) | command setviewmodelprop {1} {...}
+void SetViewModelProp(const string &in item, const ?&in ...) | command setviewmodelprop {1} {...}
 // setorigin - Move an entity
-void SetOrigin(const ?&in target, const Vector3 &in origin) | command setorigin {1} {2}
+void SetOrigin(CBaseEntity@ target, const Vector3 &in origin) | command setorigin {1} {2}
+void SetOrigin(const string &in target, const Vector3 &in origin) | command setorigin {1} {2}
 // addorigin - Offset an entity's origin
-void AddOrigin(const ?&in target, const Vector3 &in offset) | command addorigin {1} {2}
+void AddOrigin(CBaseEntity@ target, const Vector3 &in offset) | command addorigin {1} {2}
+void AddOrigin(const string &in target, const Vector3 &in offset) | command addorigin {1} {2}
 // setvelocity - Velocity (respects nopush unless `override`)
-void SetVelocity(const ?&in target, const Vector3 &in velocity) | command setvelocity {1} {2}
-void SetVelocity(const ?&in target, const Vector3 &in velocity, const string &in override) | command setvelocity {1} {2} {3}
+void SetVelocity(CBaseEntity@ target, const Vector3 &in velocity) | command setvelocity {1} {2}
+void SetVelocity(const string &in target, const Vector3 &in velocity) | command setvelocity {1} {2}
+void SetVelocity(CBaseEntity@ target, const Vector3 &in velocity, const string &in override) | command setvelocity {1} {2} {3}
+void SetVelocity(const string &in target, const Vector3 &in velocity, const string &in override) | command setvelocity {1} {2} {3}
 // addvelocity - Add velocity
-void AddVelocity(const ?&in target, const Vector3 &in velocity) | command addvelocity {1} {2}
-void AddVelocity(const ?&in target, const Vector3 &in velocity, const string &in override) | command addvelocity {1} {2} {3}
+void AddVelocity(CBaseEntity@ target, const Vector3 &in velocity) | command addvelocity {1} {2}
+void AddVelocity(const string &in target, const Vector3 &in velocity) | command addvelocity {1} {2}
+void AddVelocity(CBaseEntity@ target, const Vector3 &in velocity, const string &in override) | command addvelocity {1} {2} {3}
+void AddVelocity(const string &in target, const Vector3 &in velocity, const string &in override) | command addvelocity {1} {2} {3}
 // setangle - `face|view|... value`
 void SetAngle() | command setangle
 void SetAngle(const ?&in ...) | command setangle {...}
@@ -156,11 +169,15 @@ void SetAngle(const ?&in ...) | command setangle {...}
 void SetMoveDest() | command setmovedest
 void SetMoveDest(const ?&in ...) | command setmovedest {...}
 // setprop - Raw entity property (pev)
-void SetProp(const ?&in target, const string &in prop) | command setprop {1} {2}
-void SetProp(const ?&in target, const string &in prop, const ?&in ...) | command setprop {1} {2} {...}
+void SetProp(CBaseEntity@ target, const string &in prop) | command setprop {1} {2}
+void SetProp(const string &in target, const string &in prop) | command setprop {1} {2}
+void SetProp(CBaseEntity@ target, const string &in prop, const ?&in ...) | command setprop {1} {2} {...}
+void SetProp(const string &in target, const string &in prop, const ?&in ...) | command setprop {1} {2} {...}
 // deleteent - Remove an entity (optionally fade)
-void DeleteEntity(const ?&in target) | command deleteent {1}
-void DeleteEntity(const ?&in target, const string &in how) | command deleteent {1} {2}
+void DeleteEntity(CBaseEntity@ target) | command deleteent {1}
+void DeleteEntity(const string &in target) | command deleteent {1}
+void DeleteEntity(CBaseEntity@ target, const string &in how) | command deleteent {1} {2}
+void DeleteEntity(const string &in target, const string &in how) | command deleteent {1} {2}
 // deleteme - Remove this entity (fires game_deleted)
 void DeleteMe() | command deleteme
 // removescript - Remove this script from the entity
@@ -181,35 +198,53 @@ void Say(const ?&in ...) | command say {...}
 void SayText() | command saytext
 void SayText(const string &in message) | command saytext {1}
 // infomsg - Info popup (player or `all`)
-void InfoMessage(const ?&in player, const string &in title) | command infomsg {1} {2}
-void InfoMessage(const ?&in player, const string &in title, const string &in message) | command infomsg {1} {2} {3}
+void InfoMessage(CBaseEntity@ player, const string &in title) | command infomsg {1} {2}
+void InfoMessage(const string &in player, const string &in title) | command infomsg {1} {2}
+void InfoMessage(CBaseEntity@ player, const string &in title, const string &in message) | command infomsg {1} {2} {3}
+void InfoMessage(const string &in player, const string &in title, const string &in message) | command infomsg {1} {2} {3}
 // playermessage - Message to a player
-void PlayerMessage(const ?&in player) | command playermessage {1}
-void PlayerMessage(const ?&in player, const string &in message) | command playermessage {1} {2}
+void PlayerMessage(CBaseEntity@ player) | command playermessage {1}
+void PlayerMessage(const string &in player) | command playermessage {1}
+void PlayerMessage(CBaseEntity@ player, const string &in message) | command playermessage {1} {2}
+void PlayerMessage(const string &in player, const string &in message) | command playermessage {1} {2}
 // rplayermessage - Red message to a player
-void PlayerMessageRed(const ?&in player) | command rplayermessage {1}
-void PlayerMessageRed(const ?&in player, const string &in message) | command rplayermessage {1} {2}
+void PlayerMessageRed(CBaseEntity@ player) | command rplayermessage {1}
+void PlayerMessageRed(const string &in player) | command rplayermessage {1}
+void PlayerMessageRed(CBaseEntity@ player, const string &in message) | command rplayermessage {1} {2}
+void PlayerMessageRed(const string &in player, const string &in message) | command rplayermessage {1} {2}
 // gplayermessage - Green message to a player
-void PlayerMessageGreen(const ?&in player) | command gplayermessage {1}
-void PlayerMessageGreen(const ?&in player, const string &in message) | command gplayermessage {1} {2}
+void PlayerMessageGreen(CBaseEntity@ player) | command gplayermessage {1}
+void PlayerMessageGreen(const string &in player) | command gplayermessage {1}
+void PlayerMessageGreen(CBaseEntity@ player, const string &in message) | command gplayermessage {1} {2}
+void PlayerMessageGreen(const string &in player, const string &in message) | command gplayermessage {1} {2}
 // bplayermessage - Blue message to a player
-void PlayerMessageBlue(const ?&in player) | command bplayermessage {1}
-void PlayerMessageBlue(const ?&in player, const string &in message) | command bplayermessage {1} {2}
+void PlayerMessageBlue(CBaseEntity@ player) | command bplayermessage {1}
+void PlayerMessageBlue(const string &in player) | command bplayermessage {1}
+void PlayerMessageBlue(CBaseEntity@ player, const string &in message) | command bplayermessage {1} {2}
+void PlayerMessageBlue(const string &in player, const string &in message) | command bplayermessage {1} {2}
 // yplayermessage - Yellow message to a player
-void PlayerMessageYellow(const ?&in player) | command yplayermessage {1}
-void PlayerMessageYellow(const ?&in player, const string &in message) | command yplayermessage {1} {2}
+void PlayerMessageYellow(CBaseEntity@ player) | command yplayermessage {1}
+void PlayerMessageYellow(const string &in player) | command yplayermessage {1}
+void PlayerMessageYellow(CBaseEntity@ player, const string &in message) | command yplayermessage {1} {2}
+void PlayerMessageYellow(const string &in player, const string &in message) | command yplayermessage {1} {2}
 // dplayermessage - Dark message to a player
-void PlayerMessageDark(const ?&in player) | command dplayermessage {1}
-void PlayerMessageDark(const ?&in player, const string &in message) | command dplayermessage {1} {2}
+void PlayerMessageDark(CBaseEntity@ player) | command dplayermessage {1}
+void PlayerMessageDark(const string &in player) | command dplayermessage {1}
+void PlayerMessageDark(CBaseEntity@ player, const string &in message) | command dplayermessage {1} {2}
+void PlayerMessageDark(const string &in player, const string &in message) | command dplayermessage {1} {2}
 // consolemsg - Console message to a player
-void ConsoleMessage(const ?&in player) | command consolemsg {1}
-void ConsoleMessage(const ?&in player, const string &in message) | command consolemsg {1} {2}
+void ConsoleMessage(CBaseEntity@ player) | command consolemsg {1}
+void ConsoleMessage(const string &in player) | command consolemsg {1}
+void ConsoleMessage(CBaseEntity@ player, const string &in message) | command consolemsg {1} {2}
+void ConsoleMessage(const string &in player, const string &in message) | command consolemsg {1} {2}
 // messageall - Message to every player
 void MessageAll(const string &in color) | command messageall {1}
 void MessageAll(const string &in color, const string &in message) | command messageall {1} {2}
 // helptip - Help tip popup
-void HelpTip(const ?&in player, const string &in tip, const string &in title) | command helptip {1} {2} {3}
-void HelpTip(const ?&in player, const string &in tip, const string &in title, const ?&in ...) | command helptip {1} {2} {3} {...}
+void HelpTip(CBaseEntity@ player, const string &in tip, const string &in title) | command helptip {1} {2} {3}
+void HelpTip(const string &in player, const string &in tip, const string &in title) | command helptip {1} {2} {3}
+void HelpTip(CBaseEntity@ player, const string &in tip, const string &in title, const ?&in ...) | command helptip {1} {2} {3} {...}
+void HelpTip(const string &in player, const string &in tip, const string &in title, const ?&in ...) | command helptip {1} {2} {3} {...}
 // dbg - Debug output (dev builds)
 void DebugPrint() | command dbg
 void DebugPrint(const string &in message) | command dbg {1}
@@ -217,16 +252,20 @@ void DebugPrint(const string &in message) | command dbg {1}
 void ChatLog() | command chatlog
 void ChatLog(const string &in message) | command chatlog {1}
 // dodamage - `<target|origin> <range|direct> <damage> <hitchance> [type...]`
-void DoDamage(const ?&in target) | command dodamage {1}
-void DoDamage(const ?&in target, const ?&in ...) | command dodamage {1} {...}
+void DoDamage(CBaseEntity@ target) | command dodamage {1}
+void DoDamage(const string &in target) | command dodamage {1}
+void DoDamage(CBaseEntity@ target, const ?&in ...) | command dodamage {1} {...}
+void DoDamage(const string &in target, const ?&in ...) | command dodamage {1} {...}
 // xdodamage - Extended damage (see ms.stx)
 void DoDamageEx() | command xdodamage
 void DoDamageEx(const ?&in ...) | command xdodamage {...}
 // takedmg - Damage-taken multiplier for a type (or `all`)
 void SetDamageTaken(const string &in damageType, float ratio) | command takedmg {1} {2}
 // applyeffect - Apply an effect script
-void ApplyEffect(const ?&in target, const string &in effect) | command applyeffect {1} {2}
-void ApplyEffect(const ?&in target, const string &in effect, const ?&in ...) | command applyeffect {1} {2} {...}
+void ApplyEffect(CBaseEntity@ target, const string &in effect) | command applyeffect {1} {2}
+void ApplyEffect(const string &in target, const string &in effect) | command applyeffect {1} {2}
+void ApplyEffect(CBaseEntity@ target, const string &in effect, const ?&in ...) | command applyeffect {1} {2} {...}
+void ApplyEffect(const string &in target, const string &in effect, const ?&in ...) | command applyeffect {1} {2} {...}
 // givehp - `[entity] <amount>`
 void GiveHealth() | command givehp
 void GiveHealth(const ?&in ...) | command givehp {...}
@@ -236,12 +275,15 @@ void GiveMana(const ?&in ...) | command givemp {...}
 // dmgmulti - Outgoing damage multiplier
 void SetDamageMultiplier(float ratio) | command dmgmulti {1}
 // hitmulti - Hit chance multiplier
-void SetHitMultiplier(const ?&in target, float ratio) | command hitmulti {1} {2}
+void SetHitMultiplier(CBaseEntity@ target, float ratio) | command hitmulti {1} {2}
+void SetHitMultiplier(const string &in target, float ratio) | command hitmulti {1} {2}
 // cancelattack - Abort the current attack
 void CancelAttack() | command cancelattack
 // attackprop - Item attack property
-void SetAttackProp(const ?&in item, int attack, const string &in prop) | command attackprop {1} {2} {3}
-void SetAttackProp(const ?&in item, int attack, const string &in prop, const ?&in ...) | command attackprop {1} {2} {3} {...}
+void SetAttackProp(CBaseEntity@ item, int attack, const string &in prop) | command attackprop {1} {2} {3}
+void SetAttackProp(const string &in item, int attack, const string &in prop) | command attackprop {1} {2} {3}
+void SetAttackProp(CBaseEntity@ item, int attack, const string &in prop, const ?&in ...) | command attackprop {1} {2} {3} {...}
+void SetAttackProp(const string &in item, int attack, const string &in prop, const ?&in ...) | command attackprop {1} {2} {3} {...}
 // setstat - Stat / skill value
 void SetStat(const string &in stat) | command setstat {1}
 void SetStat(const string &in stat, const ?&in ...) | command setstat {1} {...}
@@ -261,21 +303,26 @@ void UseTrigger(const ?&in ...) | command usetrigger {...}
 void AddStoreItem(const string &in store, const string &in item) | command addstoreitem {1} {2}
 void AddStoreItem(const string &in store, const string &in item, const ?&in ...) | command addstoreitem {1} {2} {...}
 // menu.open - Open this NPC's menu for a player
-void OpenMenu(const ?&in player) | command menu.open {1}
+void OpenMenu(CBaseEntity@ player) | command menu.open {1}
+void OpenMenu(const string &in player) | command menu.open {1}
 // menu.autoopen - Open the menu when used
 void SetMenuAutoOpen(bool autoOpen) | command menu.autoopen {1}
 // catchspeech - Run <event> when a player says one of the words
 void CatchSpeech(const string &in event) | command catchspeech {1}
 void CatchSpeech(const string &in event, const ?&in ...) | command catchspeech {1} {...}
 // quest - `set|unset|clear <player> <name> [data]`
-void Quest(const string &in action, const ?&in player) | command quest {1} {2}
-void Quest(const string &in action, const ?&in player, const ?&in ...) | command quest {1} {2} {...}
+void Quest(const string &in action, CBaseEntity@ player) | command quest {1} {2}
+void Quest(const string &in action, const string &in player) | command quest {1} {2}
+void Quest(const string &in action, CBaseEntity@ player, const ?&in ...) | command quest {1} {2} {...}
+void Quest(const string &in action, const string &in player, const ?&in ...) | command quest {1} {2} {...}
 // servercmd - Run a server console command
 void ServerCommand() | command servercmd
 void ServerCommand(const string &in command) | command servercmd {1}
 // clientcmd - Run a client console command
-void ClientCommand(const ?&in player) | command clientcmd {1}
-void ClientCommand(const ?&in player, const string &in command) | command clientcmd {1} {2}
+void ClientCommand(CBaseEntity@ player) | command clientcmd {1}
+void ClientCommand(const string &in player) | command clientcmd {1}
+void ClientCommand(CBaseEntity@ player, const string &in command) | command clientcmd {1} {2}
+void ClientCommand(const string &in player, const string &in command) | command clientcmd {1} {2}
 // precachefile - Precache another script's resources
 void PrecacheFile() | command precachefile
 void PrecacheFile(const ?&in ...) | command precachefile {...}
@@ -283,8 +330,10 @@ void PrecacheFile(const ?&in ...) | command precachefile {...}
 void ClientEffect() | command cleffect
 void ClientEffect(const ?&in ...) | command cleffect {...}
 // clientevent - new|update|persist|remove <target|all> <script|id> [event] [params]
-void ClientEvent(const string &in action, const ?&in target) | command clientevent {1} {2}
-void ClientEvent(const string &in action, const ?&in target, const ?&in ...) | command clientevent {1} {2} {...}
+void ClientEvent(const string &in action, CBaseEntity@ target) | command clientevent {1} {2}
+void ClientEvent(const string &in action, const string &in target) | command clientevent {1} {2}
+void ClientEvent(const string &in action, CBaseEntity@ target, const ?&in ...) | command clientevent {1} {2} {...}
+void ClientEvent(const string &in action, const string &in target, const ?&in ...) | command clientevent {1} {2} {...}
 // effect - Server-side effect: beam, tempent, screenshake, screenfade, glow, decal
 void Effect() | command effect
 void Effect(const ?&in ...) | command effect {...}
@@ -297,11 +346,15 @@ void SetEnvironment(const string &in prop, const ?&in ...) | command setenv {1} 
 void PlaySound3D(const string &in sound, float volume, const Vector3 &in origin) | command sound.play3d {1} {2} {3}
 void PlaySound3D(const string &in sound, float volume, const Vector3 &in origin, const ?&in ...) | command sound.play3d {1} {2} {3} {...}
 // playmp3 - <player|all> <system|combat|stop> <file>
-void PlayMusic(const ?&in player, const string &in mode) | command playmp3 {1} {2}
-void PlayMusic(const ?&in player, const string &in mode, const ?&in ...) | command playmp3 {1} {2} {...}
+void PlayMusic(CBaseEntity@ player, const string &in mode) | command playmp3 {1} {2}
+void PlayMusic(const string &in player, const string &in mode) | command playmp3 {1} {2}
+void PlayMusic(CBaseEntity@ player, const string &in mode, const ?&in ...) | command playmp3 {1} {2} {...}
+void PlayMusic(const string &in player, const string &in mode, const ?&in ...) | command playmp3 {1} {2} {...}
 // hud.addstatusicon - <icon> <name> <duration> [tga]
-void AddStatusIcon(const ?&in player) | command hud.addstatusicon {1}
-void AddStatusIcon(const ?&in player, const ?&in ...) | command hud.addstatusicon {1} {...}
+void AddStatusIcon(CBaseEntity@ player) | command hud.addstatusicon {1}
+void AddStatusIcon(const string &in player) | command hud.addstatusicon {1}
+void AddStatusIcon(CBaseEntity@ player, const ?&in ...) | command hud.addstatusicon {1} {...}
+void AddStatusIcon(const string &in player, const ?&in ...) | command hud.addstatusicon {1} {...}
 // saytextrange - Range at which speech is heard (or default)
 void SetSayTextRange() | command saytextrange
 void SetSayTextRange(const ?&in ...) | command saytextrange {...}
@@ -309,8 +362,10 @@ void SetSayTextRange(const ?&in ...) | command saytextrange {...}
 void TossProjectile(const string &in projectile) | command tossprojectile {1}
 void TossProjectile(const string &in projectile, const ?&in ...) | command tossprojectile {1} {...}
 // offer - Give a target an item or gold <amount>
-void Offer(const ?&in target) | command offer {1}
-void Offer(const ?&in target, const ?&in ...) | command offer {1} {...}
+void Offer(CBaseEntity@ target) | command offer {1}
+void Offer(const string &in target) | command offer {1}
+void Offer(CBaseEntity@ target, const ?&in ...) | command offer {1} {...}
+void Offer(const string &in target, const ?&in ...) | command offer {1} {...}
 // recvoffer - accept, reject or decline the current offer
 void ReceiveOffer(const string &in response) | command recvoffer {1}
 // setanim.framerate - Animation playback rate
@@ -327,10 +382,13 @@ void SetFieldOfView(float fov) | command fov {1}
 void Look() | command look
 void Look(const ?&in ...) | command look {...}
 // npcmove - Test/perform a move using reg.npcmove.* (results in game.ret.npcmove.*)
-void NpcMove(const ?&in target) | command npcmove {1}
+void NpcMove(CBaseEntity@ target) | command npcmove {1}
+void NpcMove(const string &in target) | command npcmove {1}
 // scriptflags - add|edit|remove|cleartype|clearall|remove_expired ...
-void ScriptFlags(const ?&in target) | command scriptflags {1}
-void ScriptFlags(const ?&in target, const ?&in ...) | command scriptflags {1} {...}
+void ScriptFlags(CBaseEntity@ target) | command scriptflags {1}
+void ScriptFlags(const string &in target) | command scriptflags {1}
+void ScriptFlags(CBaseEntity@ target, const ?&in ...) | command scriptflags {1} {...}
+void ScriptFlags(const string &in target, const ?&in ...) | command scriptflags {1} {...}
 // registerrace - Register a race from reg.race.*
 void RegisterRace() | command registerrace
 // registertitle - <name> [skills]
@@ -341,7 +399,8 @@ void RegisterMenuItemLocals() | command menuitem.register
 // sethand - left, right, any, both or undroppable
 void SetHand(const string &in hand) | command sethand {1}
 // splayviewanim - View animation of a specific item
-void PlayItemViewAnim(const ?&in item, int anim) | command splayviewanim {1} {2}
+void PlayItemViewAnim(CBaseEntity@ item, int anim) | command splayviewanim {1} {2}
+void PlayItemViewAnim(const string &in item, int anim) | command splayviewanim {1} {2}
 // registerattack - Register an attack from reg.attack.*
 void RegisterAttack() | command registerattack
 // wearable - <0|1> <slot;slot...>
@@ -356,8 +415,10 @@ void SetDamageInfo(const string &in field, const ?&in ...) | command setdmg {1} 
 void SetWearPosition() | command setwearpos
 void SetWearPosition(const ?&in ...) | command setwearpos {...}
 // callclitemevent - Event on the owner's client copy of an item
-void CallClientItemEvent(const ?&in item, const string &in event) | command callclitemevent {1} {2}
-void CallClientItemEvent(const ?&in item, const string &in event, const ?&in ...) | command callclitemevent {1} {2} {...}
+void CallClientItemEvent(CBaseEntity@ item, const string &in event) | command callclitemevent {1} {2}
+void CallClientItemEvent(const string &in item, const string &in event) | command callclitemevent {1} {2}
+void CallClientItemEvent(CBaseEntity@ item, const string &in event, const ?&in ...) | command callclitemevent {1} {2} {...}
+void CallClientItemEvent(const string &in item, const string &in event, const ?&in ...) | command callclitemevent {1} {2} {...}
 // array.create - [entity] <name>
 void ArrayCreate() | command array.create
 void ArrayCreate(const ?&in ...) | command array.create {...}
@@ -415,9 +476,10 @@ string GetArray(const string &in, const string &in) | function get_array {1} {2}
 // $get_array_amt
 int GetArrayCount(const string &in) | function get_array_amt {1}
 // $get_quest_data
-string GetQuestData(const ?&in, const string &in) | function get_quest_data {1} {2}
+string GetQuestData(CBaseEntity@, const string &in) | function get_quest_data {1} {2}
+string GetQuestData(const string &in, const string &in) | function get_quest_data {1} {2}
 // $get_by_name
-string FindByName(const string &in) | function get_by_name {1}
+CBaseEntity@ FindByName(const string &in) | function get_by_name {1}
 // $get_tsphere - `;`-list of entity ids in range, or `none`
 string FindInSphere(const string &in, float) | function get_tsphere {1} {2}
 // $get_ground_height
@@ -433,7 +495,8 @@ Vector3 RelativeVelocity(const Vector3 &in) | function relvel {1.x} {1.y} {1.z}
 // $relvel - velocity along the given angles
 Vector3 RelativeVelocity(const Vector3 &in, const Vector3 &in) | function relvel {1} {2}
 // $item_exists
-string ItemExists(const ?&in, const string &in) | function item_exists {1} {2}
+string ItemExists(CBaseEntity@, const string &in) | function item_exists {1} {2}
+string ItemExists(const string &in, const string &in) | function item_exists {1} {2}
 // $angles - 2D yaw from one point to another
 float AnglesTo(const Vector3 &in, const Vector3 &in) | function angles {1} {2}
 // $dir
@@ -443,7 +506,8 @@ string TraceLine(const Vector3 &in, const Vector3 &in) | function get_traceline 
 // $timestamp
 string Timestamp() | function timestamp
 // $get_takedmg - Damage-taken multiplier for a type
-float DamageTakenOf(const ?&in, const string &in) | function get_takedmg {1} {2}
+float DamageTakenOf(CBaseEntity@, const string &in) | function get_takedmg {1} {2}
+float DamageTakenOf(const string &in, const string &in) | function get_takedmg {1} {2}
 // $ratio - Value between min and max at a 0-1 ratio
 float Ratio(float, float, float) | function ratio {1} {2} {3}
 // $within_cone2d
@@ -451,7 +515,8 @@ bool WithinCone2D(const Vector3 &in, const Vector3 &in, const Vector3 &in, float
 // $angles3d
 Vector3 Angles3DTo(const Vector3 &in, const Vector3 &in) | function angles3d {1} {2}
 // $get_scriptflag
-string ScriptFlag(const ?&in, const string &in, const string &in) | function get_scriptflag {1} {2} {3}
+string ScriptFlag(CBaseEntity@, const string &in, const string &in) | function get_scriptflag {1} {2} {3}
+string ScriptFlag(const string &in, const string &in, const string &in) | function get_scriptflag {1} {2} {3}
 // $sort_entlist
 string SortEntities(const string &in, const string &in) | function sort_entlist {1} {2}
 // $left
@@ -467,7 +532,8 @@ int GetGlobalArrayCount(const string &in) | function g_get_array_amt {1}
 // $anim_exists - Sequence index of an animation, or -1
 int AnimIndex(const string &in) | function anim_exists {1}
 // $can_damage
-bool CanDamage(const ?&in) | function can_damage {1}
+bool CanDamage(CBaseEntity@) | function can_damage {1}
+bool CanDamage(const string &in) | function can_damage {1}
 // $map_exists
 bool MapExists(const string &in) | function map_exists {1}
 // $get_insphere
@@ -481,56 +547,106 @@ float AngleDifference(float, float) | function anglediff {1} {2}
 
 // ---- $get(<entity>,<property>) -----------------------------------------------------------------
 
-string IdOf(const ?&in entity) | function get {1} id
-Vector3 OriginOf(const ?&in entity) | function get {1} origin
-Vector3 AnglesOf(const ?&in entity) | function get {1} angles
-Vector3 VelocityOf(const ?&in entity) | function get {1} velocity
-float RangeTo(const ?&in entity) | function get {1} range
-float DistanceTo(const ?&in entity) | function get {1} dist
-bool IsAlive(const ?&in entity) | function get {1} isalive
-bool Exists(const ?&in entity) | function get {1} exists
-bool IsPlayer(const ?&in entity) | function get {1} isplayer
-string NameOf(const ?&in entity) | function get {1} name
-int IndexOf(const ?&in entity) | function get {1} index
-float HealthOf(const ?&in entity) | function get {1} hp
-float MaxHealthOf(const ?&in entity) | function get {1} maxhp
-float ManaOf(const ?&in entity) | function get {1} mp
-string RaceOf(const ?&in entity) | function get {1} race
-string OwnerOf(const ?&in entity) | function get {1} owner
-float HeightOf(const ?&in entity) | function get {1} height
-float WidthOf(const ?&in entity) | function get {1} width
-string ItemNameOf(const ?&in entity) | function get {1} itemname
-string ScriptNameOf(const ?&in entity) | function get {1} scriptname
-string SteamIdOf(const ?&in entity) | function get {1} steamid
-int QuantityOf(const ?&in entity) | function get {1} quantity
-int QualityOf(const ?&in entity) | function get {1} quality
-bool IsOnGround(const ?&in entity) | function get {1} onground
-bool IsInWater(const ?&in entity) | function get {1} inwater
-bool CanAttack(const ?&in entity) | function get {1} canattack
-Vector3 ViewAnglesOf(const ?&in entity) | function get {1} viewangles
-Vector3 EyePositionOf(const ?&in entity) | function get {1} eyepos
-float MaxManaOf(const ?&in entity) | function get {1} maxmp
-string GenderOf(const ?&in entity) | function get {1} gender
-bool IsWorn(const ?&in entity) | function get {1} is_worn
-bool IsInHand(const ?&in entity) | function get {1} inhand
-string TargetOf(const ?&in entity) | function get {1} target
-string FullNameOf(const ?&in entity) | function get {1} name.full
-float DamageMultiplierOf(const ?&in entity) | function get {1} dmgmulti
-float Range2DTo(const ?&in entity) | function get {1} range2d
-float SpeedOf(const ?&in entity) | function get {1} speed
-bool IsNoPush(const ?&in entity) | function get {1} nopush
-int AnimIndexOf(const ?&in entity) | function get {1} anim.index
-string ActiveItemOf(const ?&in entity) | function get {1} active_item
-bool IsProjectile(const ?&in entity) | function get {1} is_projectile
-float ExperienceOf(const ?&in entity) | function get {1} xp
-string ScriptVarOf(const ?&in entity, const ?&in name) | function get {1} scriptvar {2}
-string RelationshipOf(const ?&in entity, const ?&in name) | function get {1} relationship {2}
-bool HasEffect(const ?&in entity, const ?&in name) | function get {1} haseffect {2}
-bool IsKeyDown(const ?&in entity, const ?&in name) | function get {1} keydown {2}
-Vector3 AttachmentPositionOf(const ?&in entity, const ?&in name) | function get {1} attachpos {2}
-Vector3 BonePositionOf(const ?&in entity, const ?&in name) | function get {1} svbonepos {2}
-float SkillOf(const ?&in entity, const string &in name) | function get {1} skill.{2}
-float StatOf(const ?&in entity, const string &in name) | function get {1} stat.{2}
+CBaseEntity@ EntityOf(CBaseEntity@ entity) | function get {1} id
+CBaseEntity@ EntityOf(const string &in entity) | function get {1} id
+Vector3 OriginOf(CBaseEntity@ entity) | function get {1} origin
+Vector3 OriginOf(const string &in entity) | function get {1} origin
+Vector3 AnglesOf(CBaseEntity@ entity) | function get {1} angles
+Vector3 AnglesOf(const string &in entity) | function get {1} angles
+Vector3 VelocityOf(CBaseEntity@ entity) | function get {1} velocity
+Vector3 VelocityOf(const string &in entity) | function get {1} velocity
+float RangeTo(CBaseEntity@ entity) | function get {1} range
+float RangeTo(const string &in entity) | function get {1} range
+float DistanceTo(CBaseEntity@ entity) | function get {1} dist
+float DistanceTo(const string &in entity) | function get {1} dist
+bool IsAlive(CBaseEntity@ entity) | function get {1} isalive
+bool IsAlive(const string &in entity) | function get {1} isalive
+bool Exists(CBaseEntity@ entity) | function get {1} exists
+bool Exists(const string &in entity) | function get {1} exists
+bool IsPlayer(CBaseEntity@ entity) | function get {1} isplayer
+bool IsPlayer(const string &in entity) | function get {1} isplayer
+string NameOf(CBaseEntity@ entity) | function get {1} name
+string NameOf(const string &in entity) | function get {1} name
+int IndexOf(CBaseEntity@ entity) | function get {1} index
+int IndexOf(const string &in entity) | function get {1} index
+float HealthOf(CBaseEntity@ entity) | function get {1} hp
+float HealthOf(const string &in entity) | function get {1} hp
+float MaxHealthOf(CBaseEntity@ entity) | function get {1} maxhp
+float MaxHealthOf(const string &in entity) | function get {1} maxhp
+float ManaOf(CBaseEntity@ entity) | function get {1} mp
+float ManaOf(const string &in entity) | function get {1} mp
+string RaceOf(CBaseEntity@ entity) | function get {1} race
+string RaceOf(const string &in entity) | function get {1} race
+CBaseEntity@ OwnerOf(CBaseEntity@ entity) | function get {1} owner
+CBaseEntity@ OwnerOf(const string &in entity) | function get {1} owner
+float HeightOf(CBaseEntity@ entity) | function get {1} height
+float HeightOf(const string &in entity) | function get {1} height
+float WidthOf(CBaseEntity@ entity) | function get {1} width
+float WidthOf(const string &in entity) | function get {1} width
+string ItemNameOf(CBaseEntity@ entity) | function get {1} itemname
+string ItemNameOf(const string &in entity) | function get {1} itemname
+string ScriptNameOf(CBaseEntity@ entity) | function get {1} scriptname
+string ScriptNameOf(const string &in entity) | function get {1} scriptname
+string SteamIdOf(CBaseEntity@ entity) | function get {1} steamid
+string SteamIdOf(const string &in entity) | function get {1} steamid
+int QuantityOf(CBaseEntity@ entity) | function get {1} quantity
+int QuantityOf(const string &in entity) | function get {1} quantity
+int QualityOf(CBaseEntity@ entity) | function get {1} quality
+int QualityOf(const string &in entity) | function get {1} quality
+bool IsOnGround(CBaseEntity@ entity) | function get {1} onground
+bool IsOnGround(const string &in entity) | function get {1} onground
+bool IsInWater(CBaseEntity@ entity) | function get {1} inwater
+bool IsInWater(const string &in entity) | function get {1} inwater
+bool CanAttack(CBaseEntity@ entity) | function get {1} canattack
+bool CanAttack(const string &in entity) | function get {1} canattack
+Vector3 ViewAnglesOf(CBaseEntity@ entity) | function get {1} viewangles
+Vector3 ViewAnglesOf(const string &in entity) | function get {1} viewangles
+Vector3 EyePositionOf(CBaseEntity@ entity) | function get {1} eyepos
+Vector3 EyePositionOf(const string &in entity) | function get {1} eyepos
+float MaxManaOf(CBaseEntity@ entity) | function get {1} maxmp
+float MaxManaOf(const string &in entity) | function get {1} maxmp
+string GenderOf(CBaseEntity@ entity) | function get {1} gender
+string GenderOf(const string &in entity) | function get {1} gender
+bool IsWorn(CBaseEntity@ entity) | function get {1} is_worn
+bool IsWorn(const string &in entity) | function get {1} is_worn
+bool IsInHand(CBaseEntity@ entity) | function get {1} inhand
+bool IsInHand(const string &in entity) | function get {1} inhand
+CBaseEntity@ TargetOf(CBaseEntity@ entity) | function get {1} target
+CBaseEntity@ TargetOf(const string &in entity) | function get {1} target
+string FullNameOf(CBaseEntity@ entity) | function get {1} name.full
+string FullNameOf(const string &in entity) | function get {1} name.full
+float DamageMultiplierOf(CBaseEntity@ entity) | function get {1} dmgmulti
+float DamageMultiplierOf(const string &in entity) | function get {1} dmgmulti
+float Range2DTo(CBaseEntity@ entity) | function get {1} range2d
+float Range2DTo(const string &in entity) | function get {1} range2d
+float SpeedOf(CBaseEntity@ entity) | function get {1} speed
+float SpeedOf(const string &in entity) | function get {1} speed
+bool IsNoPush(CBaseEntity@ entity) | function get {1} nopush
+bool IsNoPush(const string &in entity) | function get {1} nopush
+int AnimIndexOf(CBaseEntity@ entity) | function get {1} anim.index
+int AnimIndexOf(const string &in entity) | function get {1} anim.index
+CBaseEntity@ ActiveItemOf(CBaseEntity@ entity) | function get {1} active_item
+CBaseEntity@ ActiveItemOf(const string &in entity) | function get {1} active_item
+bool IsProjectile(CBaseEntity@ entity) | function get {1} is_projectile
+bool IsProjectile(const string &in entity) | function get {1} is_projectile
+float ExperienceOf(CBaseEntity@ entity) | function get {1} xp
+float ExperienceOf(const string &in entity) | function get {1} xp
+string ScriptVarOf(CBaseEntity@ entity, const ?&in name) | function get {1} scriptvar {2}
+string ScriptVarOf(const string &in entity, const ?&in name) | function get {1} scriptvar {2}
+string RelationshipOf(CBaseEntity@ entity, const ?&in name) | function get {1} relationship {2}
+string RelationshipOf(const string &in entity, const ?&in name) | function get {1} relationship {2}
+bool HasEffect(CBaseEntity@ entity, const ?&in name) | function get {1} haseffect {2}
+bool HasEffect(const string &in entity, const ?&in name) | function get {1} haseffect {2}
+bool IsKeyDown(CBaseEntity@ entity, const ?&in name) | function get {1} keydown {2}
+bool IsKeyDown(const string &in entity, const ?&in name) | function get {1} keydown {2}
+Vector3 AttachmentPositionOf(CBaseEntity@ entity, const ?&in name) | function get {1} attachpos {2}
+Vector3 AttachmentPositionOf(const string &in entity, const ?&in name) | function get {1} attachpos {2}
+Vector3 BonePositionOf(CBaseEntity@ entity, const ?&in name) | function get {1} svbonepos {2}
+Vector3 BonePositionOf(const string &in entity, const ?&in name) | function get {1} svbonepos {2}
+float SkillOf(CBaseEntity@ entity, const string &in name) | function get {1} skill.{2}
+float SkillOf(const string &in entity, const string &in name) | function get {1} skill.{2}
+float StatOf(CBaseEntity@ entity, const string &in name) | function get {1} stat.{2}
+float StatOf(const string &in entity, const string &in name) | function get {1} stat.{2}
 
 // ---- Values ------------------------------------------------------------------------------------
 

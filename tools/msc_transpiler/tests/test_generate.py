@@ -241,10 +241,41 @@ class GenerateTests(unittest.TestCase):
 
     def test_dispatch_and_variables_by_name(self):
         out, _ = convert({"npc/a": "{\n setvard COUNT 0\n}\n{ game_touch\n add COUNT 1\n}"}, "npc/a")
-        self.assertIn('if (name == "game_touch") { OnGameTouch(Param(params, 0)); return true; }', out)
+        self.assertIn('if (name == "game_touch") { OnGameTouch(EntityParam(params, 0)); return true; }', out)
         # variables are reached by name through the engine (fields keep their .script names)
         self.assertNotIn("GetLegacyVar", out)
         self.assertIn("float COUNT = 0.0f;", out)
+
+    def test_menu_callback_gets_a_player_and_typed_data(self):
+        # the engine calls a menu item's callback with the player and the item's data
+        src = ("{ game_menu_getoptions\n calleventloop 3 add_item\n}\n"
+               "{ add_item\n local IDX game.script.iteration\n local reg.mitem.title Spell\n"
+               " local reg.mitem.callback tst_forget_cb\n local reg.mitem.data IDX\n menuitem.register\n}\n"
+               "{ tst_forget_cb\n setvard MENU_TARGET PARAM1\n setvard SPELL_IDX PARAM2\n"
+               " local L_NAME $get(PARAM1,spellname,PARAM2)\n playermessage PARAM1 Forgot L_NAME\n"
+               " callevent erase MENU_TARGET\n}\n"
+               "{ erase\n wipespell PARAM1 SPELL_IDX\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        self.assertIn("void OnGameMenuGetoptions(CBasePlayer@ player = null)", out)
+        self.assertIn("void OnTstForgetCb(CBasePlayer@ param1 = null, int param2 = 0)", out)
+        self.assertIn("CBasePlayer@ MENU_TARGET = null;", out)
+        self.assertIn("@MENU_TARGET = param1;", out)
+        self.assertIn("SPELL_IDX = param2;", out)
+        self.assertIn('GetProp(param1, "spellname", param2)', out)
+        self.assertIn("menuItem.data = idx;", out)
+        self.assertIn("OnErase(MENU_TARGET);", out)
+        self.assertIn('LegacyCommand("wipespell", ', out)
+        self.assertIn("OnTstForgetCb(PlayerParam(params, 0), Int(Param(params, 1)))", out)
+
+    def test_entity_values_compare_as_entities(self):
+        src = ("{ game_damaged\n if PARAM1 equals $get(ent_me,id) hp 1\n"
+               " if ( PARAM1 isnot 0 ) hp 2\n setvard LAST_HIT $get(PARAM1,id)\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        # an old-style if: the rest of the handler runs only when they are the same entity
+        self.assertIn("if (attacker !is self)\n\t\t\treturn;", out)
+        self.assertIn("attacker !is null", out)
+        self.assertIn("CBaseEntity@ LAST_HIT = null;", out)
+        self.assertIn("@LAST_HIT = attacker;", out)
 
     LIBRARY = {
         "npc/base": "{ game_spawn\n hp 10\n}\n{ npc_struck\n callevent flinch\n callevent maybe\n}\n{ flinch\n hp 1\n}",

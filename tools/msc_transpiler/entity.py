@@ -15,7 +15,7 @@ from __future__ import annotations
 from . import names
 from .corpus import normalize
 from .emit import emit_method, emit_methods
-from .infer import BOOL, FLOAT, INT, VECTOR
+from .infer import BOOL, ENTITY, FLOAT, INT, PLAYER, VECTOR
 from .ir import Line, Method
 
 ENTITY_SUFFIX = "Script"
@@ -114,7 +114,8 @@ class EntityClasses:
             for var in sorted(self.guaranteed_fields(name)):
                 if var not in result:
                     t = self.inference.field_type(var)
-                    result[var] = ({INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, f'"{var}"'), "")
+                    result[var] = ({INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()", ENTITY: "null",
+                                    PLAYER: "null"}.get(t, f'"{var}"'), "")
         cache[key] = result
         return result
 
@@ -154,7 +155,8 @@ class EntityClasses:
             if var in inherited:
                 if inherited[var][0] != code:
                     from_file = origin and origin.lower() != info.name.lower()
-                    constructor.append(f"\t\t{names.variable(var)} = {code};" + (f" // from {origin}" if from_file else ""))
+                    at = "@" if t in (ENTITY, PLAYER) else ""       # a handle is pointed, not copied
+                    constructor.append(f"\t\t{at}{names.variable(var)} = {code};" + (f" // from {origin}" if from_file else ""))
             elif var in own or from_mixins.get(var) == code:
                 continue
             elif origin:

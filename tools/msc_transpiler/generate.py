@@ -25,7 +25,7 @@ from . import engine, names
 from .corpus import Corpus, normalize
 from .emit import emit_method, emit_methods
 from .expr import Call, Name, Number, Literal, parse_token, param_index, walk
-from .infer import BOOL, FLOAT, INT, STRING, VECTOR, Inference
+from .infer import BOOL, FLOAT, HANDLES, INT, STRING, VECTOR, Inference
 from .ir import Line, Method, Stmt, TExpr
 from .loader import Load, load
 from .context import FileContext, Quirk, SignatureTable
@@ -268,6 +268,8 @@ class Project(EntityClasses):
         return out
 
     def _initializer(self, var: str, t: str, raw: str, quoted: bool, ctx: FileContext) -> str:
+        if t in HANDLES:
+            return "null"      # anything else is assigned in OnLoad
         if raw == "":
             return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, string_literal(var))
         if not quoted and param_index(raw):

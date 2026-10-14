@@ -53,6 +53,8 @@ does, so the shared classes are compiled once.
 | `callevent 1.0 ev` / `callevent ev a b` | `CallEventDelayed(1.0f, "ev")` / `OnEv(a, b)` |
 | `calleventloop $get_token_amt(L) ev` | `int count = GetTokenCount(L); for (int i = 0; i < count; i++) { loopIteration = i; OnEv(); }` |
 | `$get(ent,hp)`, `$rand(1,5)` | `HealthOf(ent)`, `RandomInt(1, 5)` |
+| an entity the engine passes (`game_damaged`'s attacker, a menu item's player) | `CBaseEntity@ attacker`, `CBasePlayer@ player` |
+| `$get(ent_me,id)` / `$get(PARAM1,id)` / `if ( PARAM1 equals $get(ent_me,id) )` | `self` / `attacker` / `if (attacker is self)` |
 | commands | `SetName("Bertold")`, `SetHealth(400)`, `Effect("glow", ENT_ME, Vector3(0, 255, 0), 96, 1, 1)`, or `LegacyCommand("cmd", a, b)` |
 
 ### Classes
@@ -85,6 +87,29 @@ Each class ends with a generated section that connects it to the engine:
 Variables need no generated code: the engine reads and writes fields by name, and the fields keep
 their `.script` names.
 
+### Entities and players
+
+An entity is text in `.script`: its id, `PentP(idx,addr)`. Where the value is certainly an entity, the
+output uses a handle instead:
+
+* Parameters the engine fills with an entity: the entity parameters of `mapping.ENGINE_EVENTS`
+  (`CBaseEntity@ attacker`), and players where the engine only ever passes one (`game_playerused`,
+  `game_menu_getoptions`, … : `CBasePlayer@ player`).
+* Menu item callbacks (`local reg.mitem.callback confirm_forget_spell`): the engine passes the player
+  and the item's data, so `void OnConfirmForgetSpell(CBasePlayer@ player, int spellIndex)` takes the
+  type of what the menu stores in `reg.mitem.data`.
+* `$get(x,id)`, `$get(x,owner)`, `$get(x,target)`, `$get_by_name(...)`; `$get(ent_me,id)` is `self`.
+* Parameters, locals and fields that only ever hold such entities and are never compared with text
+  (an event's parameter only when every caller passes an entity), and fields set only from parameters
+  take those parameters' type (`SPELL_TO_FORGET_IDX = spellIndex` is an `int`).
+
+A handle is assigned with `@x = y` and compared with `is` (`attacker is self`, `target !is null`: "0" is
+what the engine gives for no entity). Where text is needed it is `EntityId(x)`, the same id `.script`
+had (`"0"` for none); text becomes an entity with `FindEntity(text)` (an id or a name such as
+`ent_lastseen`, looked up then). The engine's entity parameters come as handles (`NameOf(player)`); a
+handle passed where any value goes is written `@x`, so a null one passes as none. `ENT_LASTSEEN` and the
+other `ent_*` names stay names: the engine resolves them when they are used, as in `.script`.
+
 ### Commands and $functions
 
 `runtime_gen.py` writes `runtime/LegacyApi.txt`: one line per command, `$function`, `$get` property and
@@ -115,9 +140,10 @@ ASCII as `\xHH`, which AngelScript stores as that exact byte.
 |---|---|
 | `source.py`, `parser.py`, `syntax.py` | Port of `CScript::ParseScriptFile`/`ParseLine`, quirks included |
 | `loader.py` | Port of `CScript::Spawn` for one script: include order, `#scope` leaks, `[override]`, first-wins `const` |
-| `infer.py` | Picks a type per variable (int/float/bool/string/Vector3) from how the whole corpus uses it |
+| `infer.py` | Picks a type per variable (int/float/bool/string/Vector3/entity) from how the whole corpus uses it |
 | `lower.py`, `ir.py`, `emit.py` | One handler → one method, with `Script_ExecuteCmds` control flow and readable output |
 | `updates.py` | Commands that set a variable (assignments, math, text, vector, token) |
+| `calls.py` | Events calling events: `callevent`, `calleventloop`, `callexternal`, `$func`, `return` |
 | `split.py` | Locals used as a number and as text: split into the number and its text |
 | `values.py`, `context.py` | Typed values and the interpreter's implicit conversions; per-file context and event signatures |
 | `generate.py` | Files → mixins, fields, handlers, load-time work |

@@ -54,6 +54,28 @@ shared class ScriptEntity
 		return host.entity;
 	}
 
+	// An entity by .script id or by a name such as ent_lastseen, looked up now (null if there is none)
+	CBaseEntity@ FindEntity(const string &in idOrName)
+	{
+		return host.FindEntity(idOrName);
+	}
+
+	CBasePlayer@ FindPlayer(const string &in idOrName)
+	{
+		return ToPlayer(host.FindEntity(idOrName));
+	}
+
+	// Event parameter <index> (from 0) as an entity / a player: the engine passes entities as ids
+	CBaseEntity@ EntityParam(const array<string> &in params, uint index)
+	{
+		return host.FindEntity(Param(params, index));
+	}
+
+	CBasePlayer@ PlayerParam(const array<string> &in params, uint index)
+	{
+		return ToPlayer(EntityParam(params, index));
+	}
+
 	// Entity names the engine resolves relative to this entity
 	string get_ENT_ME() const property { return "ent_me"; }
 	string get_ENT_OWNER() const property { return "ent_owner"; }

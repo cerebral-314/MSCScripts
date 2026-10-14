@@ -8,23 +8,36 @@ per variable from how the corpus assigns and uses it:
   * $vec/$relpos/(x,y,z)/origins                          -> Vector3
   * anything else, or conflicting evidence               -> string
 
+  * only entities ($get(x,id), entity parameters)       -> CBaseEntity@, CBasePlayer@
+
 Script variables share one type per name across the whole corpus: included files are
 mixins of every script that includes them, so a name must mean the same everywhere.
 Locals are typed per event handler; event parameters per event name.
+
+An entity is text in .script (its id, "PentP(idx,addr)"). A variable is an entity handle only
+when everything it holds is an entity the engine hands over or a $function returns, and it is
+never compared with text: the handle then reads back as the same id wherever text is needed.
 """
 
 from __future__ import annotations
 
 import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from . import mapping
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token
 from .syntax import Cmd, CmdList, ParsedFile, Token
 
 STRING, INT, FLOAT, BOOL, VECTOR = "string", "int", "float", "bool", "Vector3"
+ENTITY, PLAYER = "CBaseEntity@", "CBasePlayer@"
 NUMERIC = (INT, FLOAT, BOOL)
+HANDLES = (ENTITY, PLAYER)
+
+
+def handle_type(mapping_type: str) -> str | None:
+    """mapping.py's entity / player -> the handle type."""
+    return {"entity": ENTITY, "player": PLAYER}.get(mapping_type)
 
 MATH_COMMANDS = {"add", "subtract", "subract", "multiply", "divide", "inc", "incvar", "dec", "decvar", "mod", "capvar"}
 STRING_COMMANDS = {"stradd", "strconc", "token.add", "token.del", "token.set", "token.scramble"}
@@ -48,11 +61,19 @@ class Evidence:
     copies: set[str] = field(default_factory=set)   # assigned from another variable
     numeric_reads: int = 0    # read as a number (numeric tests, `if X`, math, numeric arguments)
     text_reads: int = 0       # read as text (text tests, printing, text arguments, copies)
+    entities: int = 0         # assigned an entity: $get(x,id), an entity parameter, ...
+    players: int = 0          # ... a player
+    entity_uses: int = 0      # used where an entity goes ($get's first argument, entity parameters)
+    text_compare: int = 0     # compared with text or a number (`equals 0`): an entity handle can't be
+    opaque: int = 0           # passed a variable whose type is decided later (keeps a parameter text)
+    param_sources: list = field(default_factory=list)   # (event, n): setvard X PARAMn
+    arg_fields: set[str] = field(default_factory=set)    # a parameter callers pass these fields as
 
     def resolve(self, others: dict[str, str]) -> str:
         strings, vectors = self.strings, self.vectors
         ints, floats, bools = self.ints, self.floats, self.bools
         literal_strings = self.literal_strings
+        entities, players = self.entities, self.players
         for other in self.copies:
             t = others.get(other)
             if t is None:              # not a variable anywhere: the word itself
@@ -68,6 +89,15 @@ class Evidence:
                 ints += 1
             elif t == BOOL:
                 bools += 1
+            elif t in HANDLES:
+                entities += 1
+                players += t == PLAYER
+        if entities and not (strings or vectors or ints or floats or bools or self.math or self.vector_ops
+                             or self.numeric_compare or self.text_compare or self.from_params or self.opaque):
+            return PLAYER if players == entities else ENTITY
+        # an entity id is text: never a number, whatever else is assigned
+        strings += entities + self.entity_uses
+        literal_strings += entities + self.entity_uses
         if self.math and not literal_strings and not vectors:
             return FLOAT if (floats or self.math) else INT
         # changed with vector commands and never plain text: a vector, even when some values come
@@ -115,15 +145,15 @@ def call_type(call: Call) -> str:
     name = call.name.lower()
     spec = mapping.FUNCTIONS.get(name)
     if spec is not None:
-        return STRING if spec.returns == "entity" else spec.returns
+        return handle_type(spec.returns) or spec.returns
     if name in ("$get", "$get_by_idx") and len(call.args) >= 2 and isinstance(call.args[1], (Name, Literal)):
         prop = call.args[1].text.lower()
         if prop in mapping.GET_PROPERTIES:
             t = mapping.GET_PROPERTIES[prop][1]
-            return STRING if t == "entity" else t
+            return handle_type(t) or t
         if prop in mapping.GET_PROPERTIES_ARG:
             t = mapping.GET_PROPERTIES_ARG[prop][1]
-            return STRING if t == "entity" else t
+            return handle_type(t) or t
         base, _, component = prop.partition(".")
         if component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
             return FLOAT
@@ -159,6 +189,9 @@ class Inference:
         self._breaks: set[str] = set()
         self._calls: dict[str, set[str]] = defaultdict(set)
         self._breaking: set[str] | None = None
+        # menu items: the events run when one is chosen (PARAM1 the player, PARAM2 the item's data)
+        self.menu_callbacks: set[str] = set()
+        self._menu_item: dict[str, Expr | str] = {}
 
     # -- collection ------------------------------------------------------------
 
@@ -172,6 +205,7 @@ class Inference:
             local_names: set[str] = set()
             self._collect_locals(event.commands, local_names)
             self._locals = defaultdict(Evidence)
+            self._menu_item = {}
             self._walk(event.name or "", event.commands, local_names)
             if event.name and event.header_comment:
                 for index, pname in header_param_names(event.header_comment).items():
@@ -235,6 +269,10 @@ class Inference:
                 self.loop_events.add(args[1].text)
         if name == "breakloop":
             self._breaks.add(event)
+        if name == "local" and len(args) == 2 and cmd.args[0].text.lower().startswith("reg.mitem."):
+            self._menu_item[cmd.args[0].text.lower()[len("reg.mitem."):]] = args[1]
+        if name == "menuitem.register":
+            self._register_menu_item(event, locals_)
         if name in ("setvar", "setvard", "setvarg", "local") and args:
             target = cmd.args[0].text
             if name == "setvarg":
@@ -248,7 +286,7 @@ class Inference:
                         self._param_locals[(event, index)].append(self._locals[target])
                 elif name in ("setvar", "setvard") and not param_index(target):
                     self.params[(event, index)].copies.add(target)
-                    self.fields[target].from_params += 1
+                    self.fields[target].param_sources.append((event, index))
             evidence = self._target(target, locals_ if name == "local" else set())
             if evidence is not None:
                 self._assign(evidence, args[1] if len(args) == 2 else None, args[1:], locals_)
@@ -283,8 +321,15 @@ class Inference:
                 for i, value in enumerate(args[start + 1:], start=1):
                     if isinstance(value, Call) and value.name.lower() == "$pass" and value.args:
                         value = value.args[0]
-                    if isinstance(value, (Number, Literal)):
+                    if isinstance(value, (Number, Literal, Call)):
                         self._assign(self.params[(called, i)], value, [])
+                    elif isinstance(value, Name) and not param_index(value.text):
+                        if value.text.lower().startswith(("ent_", "game.")):
+                            self._assign(self.params[(called, i)], value, [])
+                        elif value.text in locals_:
+                            self.params[(called, i)].opaque += 1
+                        else:
+                            self.params[(called, i)].arg_fields.add(value.text)
                     elif isinstance(value, Name) and param_index(value.text):
                         mine = (event, param_index(value.text))
                         self._param_links[mine].add((called, i))
@@ -319,8 +364,7 @@ class Inference:
         ev = self.params[(event, index)]
         if type_ == "entity":
             # an entity id is text ("PentP(...)"): never a number, whatever callers pass
-            ev.strings += 1
-            ev.literal_strings += 1
+            ev.entity_uses += 1
             return
         if type_ == "Vector3":
             ev.vectors += 1
@@ -352,6 +396,11 @@ class Inference:
                     evidence.literal_strings += 1
                 elif op in ("equals", "isnot", "!equals") and isinstance(other, Literal):
                     evidence.strings += 1
+                    evidence.text_compare += 1
+                if op in ("equals", "isnot", "!equals", "startswith", "!startswith", "contains", "!contains") \
+                        and (isinstance(other, (Number, Literal)) or isinstance(other, Name)
+                             and other.text.lower().startswith("ent_")):
+                    evidence.text_compare += 1
 
     def _assign(self, evidence: Evidence, value: Expr | None, parts: list[Expr], locals_: set[str] = frozenset()) -> None:
         if value is None:
@@ -370,7 +419,16 @@ class Inference:
             else:
                 evidence.floats += 1
         elif isinstance(value, Name):
-            if param_index(value.text) or value.text.startswith(("game.", "const.", "ent_")):
+            builtin = INT if value.text.lower() == "game.script.iteration" else mapping.BUILTINS.get(value.text, ("", ""))[1]
+            if builtin == INT:
+                evidence.ints += 1
+            elif builtin == FLOAT:
+                evidence.floats += 1
+            elif builtin == VECTOR:
+                evidence.vectors += 1
+            elif builtin == BOOL:
+                evidence.bools += 1
+            elif param_index(value.text) or value.text.startswith(("game.", "const.", "ent_")):
                 evidence.strings += 1 if value.text.startswith("ent_") else 0
             elif value.text in locals_:
                 pass            # a local of the handler: its type is decided per handler, not here
@@ -390,8 +448,56 @@ class Inference:
                 evidence.ints += 1
             elif t == BOOL:
                 evidence.bools += 1
+            elif t in HANDLES:
+                evidence.entities += 1
+                evidence.players += t == PLAYER
+
+    def _register_menu_item(self, event: str, locals_: set[str]) -> None:
+        """menuitem.register: the callbacks of the item get the player and the item's data."""
+        data = self._menu_item.get("data")
+        for key in ("callback", "cb_failed"):
+            callback = self._menu_item.get(key)
+            if not isinstance(callback, Name) or param_index(callback.text):
+                continue
+            self.menu_callbacks.add(callback.text)
+            self.event_names.add(callback.text)
+            target = self.params[(callback.text, 2)]
+            if isinstance(data, Name) and data.text in locals_:
+                self._param_locals[(callback.text, 2)].append(self._locals[data.text])
+            elif isinstance(data, Name) and param_index(data.text):
+                mine = (event, param_index(data.text))
+                self._param_links[mine].add((callback.text, 2))
+                self._param_links[(callback.text, 2)].add(mine)
+            elif isinstance(data, Name) and not data.text.lower().startswith(("game.", "const.", "ent_")):
+                target.copies.add(data.text)
+            elif data is not None:
+                self._assign(target, data, [])
 
     # -- results -----------------------------------------------------------------
+
+    def known_param_type(self, event: str, index: int) -> str | None:
+        """An entity parameter the engine guarantees: an engine event's entity, the player of a menu
+        item's callback."""
+        spec = mapping.ENGINE_EVENTS.get(event)
+        if spec and index <= len(spec.params):
+            return handle_type(spec.params[index - 1].type)
+        if event in self.menu_callbacks and index == 1:
+            return PLAYER
+        return None
+
+    def _with_sources(self, evidence: Evidence) -> Evidence:
+        """setvard X PARAMn: an entity parameter assigns an entity, any other one caller-given text."""
+        if not evidence.param_sources:
+            return evidence
+        out = replace(evidence, copies=set(evidence.copies), param_sources=[])
+        for event, index in evidence.param_sources:
+            t = self.known_param_type(event, index)
+            if t in HANDLES:
+                out.entities += 1
+                out.players += t == PLAYER
+            else:
+                out.from_params += 1
+        return out
 
     def breaks_loop(self, event: str) -> bool:
         """Whether running the event can `breakloop` (itself or through an event it calls)."""
@@ -410,9 +516,10 @@ class Inference:
     def field_types(self) -> dict[str, str]:
         if self._field_types is None:
             types: dict[str, str] = {name: STRING for name in self.fields}
+            fields = {name: self._with_sources(evidence) for name, evidence in self.fields.items()}
             for _ in range(6):   # propagate copies
                 changed = False
-                for name, evidence in self.fields.items():
+                for name, evidence in fields.items():
                     t = evidence.resolve(types)
                     if types.get(name) != t:
                         types[name] = t
@@ -420,7 +527,31 @@ class Inference:
                 if not changed:
                     break
             self._field_types = types
+            # a field only ever set from event parameters holds what they hold: give it their type,
+            # then type the parameters again with it
+            fed = {name: self._fed_type(evidence) for name, evidence in self.fields.items() if self._param_fed(evidence)}
+            for name, t in fed.items():
+                if t is not None:
+                    types[name] = t
+            if self._param_types:
+                self._param_types.clear()       # typed before the fields were final
         return self._field_types
+
+    @staticmethod
+    def _param_fed(evidence: Evidence) -> bool:
+        return bool(evidence.param_sources) and not any((
+            evidence.ints, evidence.floats, evidence.bools, evidence.strings, evidence.vectors, evidence.entities,
+            evidence.copies, evidence.math, evidence.vector_ops, evidence.text_compare))
+
+    def _fed_type(self, evidence: Evidence) -> str | None:
+        found = {self.param_type(event, index) for event, index in evidence.param_sources}
+        if len(found) == 1:
+            return found.pop()
+        if found <= {INT, FLOAT}:
+            return FLOAT
+        if found <= set(HANDLES):
+            return ENTITY
+        return None
 
     def field_type(self, name: str) -> str:
         return self.field_types().get(name, STRING)
@@ -435,23 +566,36 @@ class Inference:
             return self._param_types[key]
         t = self._own_param_type(key)
         if t is None:
-            seen, queue = {key}, list(self._param_links.get(key, ()))
-            while queue and t is None:
+            # the types of the parameters it is passed on as or receives from: a handle only when
+            # every one of them is a handle, otherwise the first other type found
+            seen, queue, found = {key}, list(self._param_links.get(key, ())), []
+            while queue:
                 other = queue.pop(0)
                 if other in seen:
                     continue
                 seen.add(other)
-                t = self._own_param_type(other)
-                queue.extend(self._param_links.get(other, ()))
+                own = self._own_param_type(other)
+                if own is None:
+                    queue.extend(self._param_links.get(other, ()))
+                else:
+                    found.append(own)
+            others = [f for f in found if f not in HANDLES]
+            if others:
+                t = others[0]
+            elif found:
+                t = PLAYER if all(f == PLAYER for f in found) else ENTITY
         self._param_types[key] = t or STRING
         return self._param_types[key]
 
     def _own_param_type(self, key: tuple[str, int]) -> str | None:
         """The type its own evidence gives, or None when there is none."""
+        known = self.known_param_type(*key)
+        if known is not None:
+            return known
         evidence = self.params.get(key, Evidence())
-        combined = Evidence(evidence.ints, evidence.floats, evidence.bools, evidence.strings, evidence.literal_strings,
-                            evidence.vectors, evidence.vector_ops, evidence.math, evidence.numeric_compare,
-                            evidence.from_params, set(evidence.copies))
+        fed = {c for c in evidence.copies if c in self.fields and self._param_fed(self.fields[c])}
+        combined = replace(evidence, copies=set(evidence.copies) - fed | set(evidence.arg_fields),
+                           param_sources=list(evidence.param_sources), numeric_reads=0, text_reads=0)
         field_types = self.field_types()
         for local in self._param_locals.get(key, []):
             t = local.resolve(field_types)
@@ -463,10 +607,14 @@ class Inference:
                 combined.ints += 1 if t == INT else 0
             elif t == VECTOR:
                 combined.vectors += 1
+            elif t in HANDLES:
+                combined.entities += 1
+                combined.players += t == PLAYER
             elif local.strings or local.literal_strings:
                 combined.strings += 1
         if not any((combined.ints, combined.floats, combined.bools, combined.strings, combined.literal_strings,
-                    combined.vectors, combined.math, combined.numeric_compare, combined.copies)):
+                    combined.vectors, combined.math, combined.numeric_compare, combined.copies, combined.entities,
+                    combined.opaque, combined.text_compare, combined.arg_fields)):
             return None
         t = combined.resolve(field_types)
         if t == STRING and combined.numeric_compare and not combined.strings and not combined.literal_strings:

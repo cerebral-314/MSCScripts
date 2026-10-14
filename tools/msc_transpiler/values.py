@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 
-from .infer import BOOL, FLOAT, INT, STRING, VECTOR
+from .infer import BOOL, FLOAT, HANDLES, INT, PLAYER, STRING, VECTOR
 from .ir import ADD, ATOM, COMPARE, EQUALITY, MUL, UNARY, TExpr
 
 NUMERIC_TYPES = (INT, FLOAT)
@@ -83,6 +83,8 @@ def convert(e: TExpr, want: str | None) -> TExpr:
         want = STRING
     if want is None or want == e.type:
         return e
+    if e.type in HANDLES or want in HANDLES:
+        return _convert_entity(e, want)
     if e.numeric is not None and want in (INT, FLOAT, BOOL):
         return convert(e.numeric, want)
     t = e.type
@@ -115,6 +117,27 @@ def convert(e: TExpr, want: str | None) -> TExpr:
     return e
 
 
+def assigned(e: TExpr, want: str) -> TExpr:
+    """The value of `x = e` for x of type `want`: a string takes a whole number directly (AngelScript
+    writes it as .script does), anything else converts as usual."""
+    if want == STRING and e.type == INT and e.numeric is None and e.literal is None:
+        return e
+    return convert(e, want)
+
+
+def _convert_entity(e: TExpr, want: str) -> TExpr:
+    """An entity is its id in .script: a handle reads as EntityId(x) ("0" for none), and text is
+    looked up as an id or a name such as ent_lastseen (FindEntity)."""
+    if e.type in HANDLES and want in HANDLES:
+        return e if want != PLAYER or e.type == PLAYER else TExpr(f"ToPlayer({e.code})", PLAYER)
+    if e.type in HANDLES:
+        return convert(TExpr(f"EntityId({e.code})", STRING), want)
+    if e.literal is not None and e.literal in ("", "0"):
+        return TExpr("null", want, literal=None)
+    lookup = "FindPlayer" if want == PLAYER else "FindEntity"
+    return TExpr(f"{lookup}({convert(e, STRING).code})", want)
+
+
 def _fold_literal(e: TExpr, want: str) -> TExpr | None:
     text = e.literal
     if e.type == BOOL:
@@ -144,6 +167,8 @@ def truthy(e: TExpr) -> TExpr:
         return TExpr(f"int({e.code}) != 0", BOOL, EQUALITY)
     if e.type == VECTOR:
         return FALSE
+    if e.type in HANDLES:
+        return truthy(convert(e, STRING))     # an id never starts with a digit: false
     return TExpr(f"Truthy({e.code})", BOOL)
 
 
@@ -152,9 +177,10 @@ def negate(e: TExpr) -> TExpr:
         return FALSE
     if e.code == "false":
         return TRUE
-    m = re.fullmatch(r"(.+) (==|!=) (.+)", e.code)
-    if e.prec == EQUALITY and m and "&&" not in e.code and "||" not in e.code and " == " not in m.group(1):
-        op = "!=" if m.group(2) == "==" else "=="
+    m = re.fullmatch(r"(.+) (==|!=|is|!is) (.+)", e.code)
+    if e.prec == EQUALITY and m and "&&" not in e.code and "||" not in e.code and " == " not in m.group(1) \
+            and " is " not in m.group(1):
+        op = {"==": "!=", "!=": "==", "is": "!is", "!is": "is"}[m.group(2)]
         return TExpr(f"{m.group(1)} {op} {m.group(3)}", BOOL, EQUALITY)
     if e.code.startswith("!") and e.prec == UNARY:
         inner = e.code[1:]
@@ -165,6 +191,8 @@ def negate(e: TExpr) -> TExpr:
 def missing_param(t: str, index: int) -> str:
     """The default of a parameter the caller did not pass. (In .script it reads as its own name,
     "PARAM4"; scripts test that with `equals 'PARAM4'`, which converts to an emptiness test.)"""
+    if t in HANDLES:
+        return "null"
     return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
 
 

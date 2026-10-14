@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from . import names
 from .expr import Expr, Number, param_index
-from .infer import FLOAT, INT, STRING, VECTOR
+from .infer import FLOAT, HANDLES, INT, STRING, VECTOR
 from .ir import ADD, MUL, UNARY, Append, Assign, Comment, Line, Stmt, TExpr, Update
 from .syntax import Cmd, Token
-from .values import NUMERIC_TYPES, c_atof, convert, join, lit, string_literal
+from .values import NUMERIC_TYPES, assigned, c_atof, convert, join, lit, string_literal
 
 
 class UpdateCommands:
@@ -36,14 +36,16 @@ class UpdateCommands:
         if index and index in self.params:
             n, t = self.params[index]
             value = self._concat(args[1:])
-            return [Line(f"{n} = {convert(value, t).code}", assign=Assign(n, t, value))]
+            at = _handle_prefix(t)
+            return [Line(f"{at}{n} = {convert(value, t).code}", assign=Assign(n, t, value, at))]
         if target in self.locals:          # setvard on a local's name updates the local
             return self._assign_local(cmd, tokens, args)
         value = self._concat(args[1:])
         if target in self.ctx.fields and names.is_identifier(target):
             t = self.ctx.fields[target]
             ident = names.variable(target)
-            return [Line(f"{ident} = {convert(value, t).code}", assign=Assign(ident, t, value, field=True))]
+            at = _handle_prefix(t)
+            return [Line(f"{at}{ident} = {assigned(value, t).code}", assign=Assign(ident, t, value, at, field=True))]
         target_expr = self.text(args[0]) if not names.is_identifier(target) else lit(target)
         return [Line(f"SetVar({target_expr.code}, {self._any(args[1:], value).code})")]
 
@@ -59,7 +61,7 @@ class UpdateCommands:
             if not self.menu_item:
                 self.menu_item = True
                 self.top_declarations.append(Line("MenuItem menuItem"))
-            return [Line(f"menuItem.{field_name} = {convert(value, STRING).code}")]
+            return [Line(f"menuItem.{field_name} = {assigned(value, STRING).code}")]
         if target.lower().startswith("reg.") or target not in self.locals:
             return [Line(f"SetLocal({string_literal(target)}, {self._any(args[1:], value).code})")]
         if target in self.aliases:
@@ -78,7 +80,8 @@ class UpdateCommands:
             return [Line(f"{t} {ident} = {code}", declares=True, assign=Assign(ident, t, value, f"{t} "))]
         if target not in self.declared:
             self._declare_early(target)
-        return [Line(f"{ident} = {code}", assign=Assign(ident, t, value))]
+        at = _handle_prefix(t)
+        return [Line(f"{at}{ident} = {assigned(value, t).code}", assign=Assign(ident, t, value, at))]
 
     def _lvalue(self, name: str, numeric: bool = False) -> TExpr | None:
         """The variable a command changes. A split local (split.py) gives its number for math."""
@@ -259,6 +262,11 @@ class UpdateCommands:
                  for i, a in enumerate(args[1:1 + needed])]
         return self._set(target, lambda cur: TExpr(f"{helper}({', '.join([convert(cur, STRING).code] + [e.code for e in extra])})",
                                                    STRING), extra)
+
+def _handle_prefix(t: str) -> str:
+    """`@target = entity`: a handle variable is pointed at the entity (plain `=` would copy it)."""
+    return "@" if t in HANDLES else ""
+
 
 def _cmd_source(cmd: Cmd) -> str:
     words = " ".join(t.text if not t.quoted else f'"{t.text}"' for t in cmd.args)
