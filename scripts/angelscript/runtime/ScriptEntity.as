@@ -1,8 +1,6 @@
 #pragma context server
 
 #include "runtime/Legacy.as"
-#include "runtime/Commands.as"
-#include "runtime/Functions.as"
 
 // Base class for MS-Script files converted to AngelScript.
 //
@@ -21,16 +19,21 @@
 // ($get(x,scriptvar,'NAME'), setvar from other scripts). Converted fields keep their
 // .script names for that reason.
 //
-// The .script commands and $functions are methods from LegacyCommands and
-// LegacyFunctions (generated from the transpiler's mapping table).
+// The .script commands and $functions are global functions the engine registers from
+// runtime/LegacyApi.txt (generated from the transpiler's mapping table): SetHealth(400),
+// PlaySound(0, 10, "voice/hello.wav"), NameOf(player), ... They run on the script that calls
+// them, and take numbers, vectors and entities as they are.
 //
 // The class is `shared`, so it is compiled once and every script module uses that copy.
-shared class ScriptEntity : LegacyCommands, LegacyFunctions
+shared class ScriptEntity
 {
 	ScriptHost@ host;
 
 	// game.script.iteration inside a calleventloop
 	int loopIteration = 0;
+
+	// breakloop: the calleventloop running this stops after the current run
+	bool breakLoop = false;
 
 	void Attach(ScriptHost@ scriptHost)
 	{
@@ -72,41 +75,12 @@ shared class ScriptEntity : LegacyCommands, LegacyFunctions
 	string get_ENT_CURRENTPLAYER() const property { return "ent_currentplayer"; }
 
 	// ---- Events -------------------------------------------------------------------------
-
-	// callevent <name> [params] - runs every handler of that event in this script
-	void CallEvent(const string &in name, const array<string>@ params = null)
-	{
-		host.CallEvent(name, params);
-	}
+	// (CallEvent, CallEventOrDelay, CallExternal and CallFunction are in LegacyApi.txt)
 
 	// callevent <delay> <name> - parameters of delayed calls are not kept
 	void CallEventDelayed(float delay, const string &in name)
 	{
 		host.CallEventDelayed(delay, name);
-	}
-
-	// callevent <value> ... where the first value decides at run time:
-	// a number delays the call, anything else is the event name
-	void CallEventOrDelay(const string &in first, const array<string>@ rest = null)
-	{
-		array<string> args = { first };
-		AppendArgs(args, rest);
-		host.Command("callevent", args);
-	}
-
-	// callexternal <target> <name> [params] - an event on another entity's scripts
-	// (target may also be "all", "players" or "gamemaster")
-	void CallExternal(const string &in target, const string &in name, const array<string>@ params = null)
-	{
-		array<string> args = { target, name };
-		AppendArgs(args, params);
-		host.Command("callexternal", args);
-	}
-
-	// $func(<name>, params...) for events whose result is decided at run time
-	string CallFunction(const string &in name, const array<string>@ params = null)
-	{
-		return host.CallFunction(name, params);
 	}
 
 	// return <value> from an event that has no typed result
@@ -116,29 +90,13 @@ shared class ScriptEntity : LegacyCommands, LegacyFunctions
 	}
 
 	// ---- Variables by .script name ---------------------------------------------------------
+	// (SetVar, SetGlobal and SetLocal are in LegacyApi.txt)
 
 	// A script variable that is not a field here: set by another included file, the engine,
 	// or under a name built at run time. An unset variable reads as its own name.
 	string GetVar(const string &in name)
 	{
 		return host.GetVar(name);
-	}
-
-	void SetVar(const string &in name, const string &in value)
-	{
-		host.SetVar(name, value);
-	}
-
-	// setvarg - a variable shared by every script on the server
-	void SetGlobal(const string &in name, const string &in value)
-	{
-		host.Command("setvarg", { name, value });
-	}
-
-	// local reg.* values read by commands such as menuitem.register
-	void SetLocal(const string &in name, const string &in value)
-	{
-		host.SetLocal(name, value);
 	}
 
 	string GetLocal(const string &in name)
@@ -150,24 +108,6 @@ shared class ScriptEntity : LegacyCommands, LegacyFunctions
 	string Eval(const string &in expression)
 	{
 		return host.Eval(expression);
-	}
-
-	// ---- Entities -----------------------------------------------------------------------------
-
-	// $get(<entity>,<property>[,<option>...])
-	string GetProp(const string &in entity, const string &in prop)
-	{
-		return host.Function("get", { entity, prop });
-	}
-
-	string GetProp(const string &in entity, const string &in prop, const string &in option)
-	{
-		return host.Function("get", { entity, prop, option });
-	}
-
-	string GetProp(const string &in entity, const string &in prop, const string &in option, const string &in option2)
-	{
-		return host.Function("get", { entity, prop, option, option2 });
 	}
 
 	// ---- Menus ----------------------------------------------------------------------------------
@@ -191,31 +131,11 @@ shared class ScriptEntity : LegacyCommands, LegacyFunctions
 			host.SetLocal(name, value);
 	}
 
-	// ---- Anything without a typed wrapper yet -----------------------------------------------
-
-	// A .script command with already-evaluated arguments
-	void LegacyCommand(const string &in name, const array<string>@ args = null)
-	{
-		host.Command(name, args);
-	}
-
-	// A $function with already-evaluated arguments
-	string LegacyFunction(const string &in name, const array<string>@ args = null)
-	{
-		return host.Function(name, args);
-	}
+	// ---- Resources ------------------------------------------------------------------------------
 
 	// Precache a model (models/...), sprite (sprites/...) or sound
 	void Precache(const string &in file)
 	{
 		host.Precache(file);
-	}
-
-	private void AppendArgs(array<string>& args, const array<string>@ extra)
-	{
-		if (extra is null)
-			return;
-		for (uint i = 0; i < extra.length(); i++)
-			args.insertLast(extra[i]);
 	}
 }

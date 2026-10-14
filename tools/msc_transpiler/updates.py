@@ -45,7 +45,7 @@ class UpdateCommands:
             ident = names.variable(target)
             return [Line(f"{ident} = {convert(value, t).code}", assign=Assign(ident, t, value, field=True))]
         target_expr = self.text(args[0]) if not names.is_identifier(target) else lit(target)
-        return [Line(f"SetVar({target_expr.code}, {convert(value, STRING).code})")]
+        return [Line(f"SetVar({target_expr.code}, {self._any(args[1:], value).code})")]
 
     def _assign_local(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
         if not tokens:
@@ -61,7 +61,7 @@ class UpdateCommands:
                 self.top_declarations.append(Line("MenuItem menuItem"))
             return [Line(f"menuItem.{field_name} = {convert(value, STRING).code}")]
         if target.lower().startswith("reg.") or target not in self.locals:
-            return [Line(f"SetLocal({string_literal(target)}, {convert(value, STRING).code})")]
+            return [Line(f"SetLocal({string_literal(target)}, {self._any(args[1:], value).code})")]
         if target in self.aliases:
             return []        # the local is just the parameter
         if target in self.splits:
@@ -103,8 +103,11 @@ class UpdateCommands:
         return target.code not in {ident for ident, _ in self.locals.values()}
 
     def _legacy(self, name: str, target: str, args: list[Expr]) -> list[Stmt]:
-        parts = [string_literal(target)] + [self.text(a).code for a in args]
-        return [Line(f'LegacyCommand("{name}", {{ {", ".join(parts)} }})')]
+        return [Line(f'LegacyCommand("{name}", {string_literal(target)}{self.args(args)})')]
+
+    def _any(self, values: list[Expr], joined: TExpr) -> TExpr:
+        """A value for a `const ?&in` parameter: one token keeps its type, several are joined text."""
+        return self.arg(values[0]) if len(values) == 1 else convert(joined, STRING)
 
     def _set(self, target: TExpr, apply, reads: list[TExpr], short: str | None = None) -> list[Stmt]:
         """`target = apply(target)`, or `short` (`x += 2`) when that says the same. The line keeps

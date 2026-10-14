@@ -58,6 +58,16 @@ def number_code(text: str, type_: str) -> str:
     return value
 
 
+def float_arg(e: TExpr) -> str:
+    """A float argument: a whole-number literal is written without decimals (Vector3(0, 255, 0),
+    SetHealth(400)); the parameter's type makes it a float."""
+    if e.type == FLOAT and e.literal is not None:
+        value = c_atof(e.literal)
+        if value == int(value) and abs(value) < 1e9:
+            return str(int(value))
+    return e.code
+
+
 def format_number(value: float, type_: str) -> TExpr:
     if type_ == INT:
         code = str(int(value))
@@ -178,12 +188,13 @@ def join(parts: list[TExpr], separator: str = "") -> TExpr:
         return lit("")
     if len(merged) == 1:
         return convert(merged[0], STRING)
-    # AngelScript adds left to right: numbers may stay numbers once the chain starts with text
+    # AngelScript adds left to right: whole numbers may stay numbers once the chain starts with text
+    # (string + int writes them as .script does; floats and bools need Text())
     out: list[str] = []
     for i, part in enumerate(merged):
         if part.type == STRING:
             out.append(part.wrapped(ADD))
-        elif part.type in NUMERIC_TYPES and i > 0 and merged[0].type == STRING:
+        elif part.type == INT and i > 0 and merged[0].type == STRING:
             out.append(part.wrapped(MUL))
         else:
             out.append(convert(part, STRING).wrapped(ADD))

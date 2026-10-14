@@ -34,6 +34,7 @@ from .values import convert, number_code, string_literal
 from .syntax import Cmd, CmdList, Event, Include, ParsedFile, ScopeDirective
 from .entity import EntityClasses
 from .wiring import EventWiring
+from .runtime_gen import api_names
 
 HEADER = "#pragma context server"
 RUNTIME_INCLUDE = '#include "runtime/ScriptEntity.as"'
@@ -59,7 +60,7 @@ class Project(EntityClasses):
     def __init__(self, corpus: Corpus):
         self.corpus = corpus
         self.all_names = corpus.names()
-        self.class_names = names.unique_class_names(self.all_names)
+        self.class_names = names.unique_class_names(self.all_names, api_names())
         self.included_by: dict[str, set[str]] = defaultdict(set)
         for name in self.all_names:
             parsed = corpus.parse(name, engine.WORLD)

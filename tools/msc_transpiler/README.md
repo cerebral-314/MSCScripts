@@ -12,7 +12,7 @@ python -m msc_transpiler convert items/base_ticket          # one script and the
 python -m msc_transpiler convert --family monsters/base_npc # every script that includes base_npc
 python -m msc_transpiler convert --all                      # the whole scripts folder
 python -m msc_transpiler report --all > quirks.txt          # legacy quirks found while converting
-python -m msc_transpiler runtime                            # regenerate runtime/Commands.as, Functions.as
+python -m msc_transpiler runtime                            # regenerate runtime/LegacyApi.txt
 python -m unittest discover -s msc_transpiler/tests -t .    # tests
 ```
 
@@ -25,13 +25,14 @@ uses a converted file when the server runs with `as_entity_scripts 1` in an `MSR
 starting a server:
 
 ```bash
-python -m msc_transpiler convert --all --list converted.txt
-as_check --config <MasterSwordRebirth>/utils/as_check/config/as_config_server.txt \
-         --root ../scripts/angelscript --quiet --list converted.txt
+python -m msc_transpiler convert --all
+python -m msc_transpiler check --as-check <MasterSwordRebirth>/utils/build/as_check/Release/as_check.exe \
+         --config <MasterSwordRebirth>/utils/as_check/config/as_config_server.txt --jobs 12
 ```
 
-Every converted file has a `[script "…"]` class, so the check compiles all of them. `check` keeps the
-modules of one process alive, as the game does, so the shared classes are compiled once.
+Every converted file has a `[script "…"]` class, so the check compiles all of them. `check` passes
+`runtime/LegacyApi.txt` to as_check (`--api`), and keeps the modules of one process alive, as the game
+does, so the shared classes are compiled once.
 
 ## What the output looks like
 
@@ -50,8 +51,9 @@ modules of one process alive, as the game does, so the shared classes are compil
 | `if ( A equals B )` / `else if` | `if (A == B)` / `else if` |
 | `if X` (no parentheses) | early `return` at the top of a handler, otherwise wraps the rest of its block |
 | `callevent 1.0 ev` / `callevent ev a b` | `CallEventDelayed(1.0f, "ev")` / `OnEv(a, b)` |
+| `calleventloop $get_token_amt(L) ev` | `int count = GetTokenCount(L); for (int i = 0; i < count; i++) { loopIteration = i; OnEv(); }` |
 | `$get(ent,hp)`, `$rand(1,5)` | `HealthOf(ent)`, `RandomInt(1, 5)` |
-| commands | typed wrappers (`SetName("Bertold")`, `PlaySound(…)`) or `LegacyCommand("cmd", {…})` |
+| commands | `SetName("Bertold")`, `SetHealth(400)`, `Effect("glow", ENT_ME, Vector3(0, 255, 0), 96, 1, 1)`, or `LegacyCommand("cmd", a, b)` |
 
 ### Classes
 
@@ -83,6 +85,27 @@ Each class ends with a generated section that connects it to the engine:
 Variables need no generated code: the engine reads and writes fields by name, and the fields keep
 their `.script` names.
 
+### Commands and $functions
+
+`runtime_gen.py` writes `runtime/LegacyApi.txt`: one line per command, `$function`, `$get` property and
+`game.*` value, each a declaration and the legacy handler it runs:
+
+    void PlaySound(int channel, const ?&in ...) | command playsound {1} {...}
+    float HealthOf(const ?&in entity) | function get {1} hp
+
+The engine registers every line as a global function that converted scripts call directly. It passes
+one argument per `.script` token to the same C++ handler the interpreter uses, written as `.script`
+text, so numbers, vectors and entities go in as they are (`Effect("glow", ENT_ME, Vector3(0, 255, 0), 96,
+1, 1)` runs `effect glow ent_me (0,255,0) 96 1 1`). `const ?&in` takes a value of any type; `...` takes
+any number of them. Commands whose handler joins its trailing words itself (`name`, `desc`, the message
+commands) take that text as one string; every other command gets each token separately, as
+in `.script`.
+
+`calleventloop` becomes a `for` loop over a local index. Each run sees its index as `loopIteration`
+(`game.script.iteration`); the count is taken once, before the first run; a loop inside another one puts
+the outer index back afterwards, and `breakloop` (`breakLoop = true`) stops the loop that runs it — all as
+the engine does.
+
 Text keeps its bytes: scripts are Latin-1, and string constants write anything outside printable
 ASCII as `\xHH`, which AngelScript stores as that exact byte.
 
@@ -101,17 +124,19 @@ ASCII as `\xHH`, which AngelScript stores as that exact byte.
 | `entity.py` | Each file's `[script]` class: its base class, mixins, inherited fields and constructor |
 | `wiring.py` | Which event methods each class declares, what they run, dispatch by `.script` name |
 | `mapping.py` | Commands, `$functions`, `$get` properties, engine events → AngelScript (single source of truth) |
-| `runtime_gen.py` | Writes `runtime/Commands.as` and `runtime/Functions.as` from `mapping.py` |
+| `runtime_gen.py` | Writes `runtime/LegacyApi.txt` (the engine API table) from `mapping.py` |
 | `extract_engine_tables.py` | Refreshes `data/engine_tables.json` (which commands each entity type accepts) from the C++ |
 
 The runtime the output relies on lives in `scripts/angelscript/runtime/`: `ScriptEntity.as` (base class),
-`Legacy.as` (text/number conversions and token lists that behave like the interpreter), and the two
-generated wrapper files. All of it is `shared`, because the libraries' shared classes call it.
+`Legacy.as` (text/number conversions and token lists that behave like the interpreter), both `shared`
+because the libraries' shared classes call them, and the generated `LegacyApi.txt`.
 
 ## Making the output more readable
 
 * Add a command, `$function` or `$get` property to `mapping.py`, run `runtime`, then `convert` again.
-  Unmapped ones stay correct as `LegacyCommand(...)` / `LegacyFunction(...)`.
+  Unmapped ones stay correct as `LegacyCommand("name", ...)` / `LegacyFunction("name", ...)`.
+  A command's trailing `text` parameter is joined into one string (only for commands whose handler
+  joins its words); `...` passes each remaining token as its own argument.
 * Add an engine event to `mapping.ENGINE_EVENTS` to give its parameters names and types.
 * Every other event's parameter names are in `data/param_names.json` (`{"gold_spew": {"1": "goldPerBag", …}}`).
   They were written by a language model from each parameter's comments, the lines that use it and the

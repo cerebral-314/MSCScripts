@@ -27,7 +27,7 @@ def squash(text: str) -> str:
 class GenerateTests(unittest.TestCase):
     def test_top_level_guard_becomes_early_return(self):
         out, _ = convert({"npc/a": "{ test_event_without_names\n if PARAM1 equals x\n hp 5\n}"}, "npc/a")
-        self.assertIn('if (param1 != "x")\nreturn;\nSetHealth(5.0f);', squash(out))
+        self.assertIn('if (param1 != "x")\nreturn;\nSetHealth(5);', squash(out))
 
     def test_writing_a_parameter_changes_the_parameter(self):
         out, _ = convert({"npc/a": "{ test_event_without_names\n local L_ORIG PARAM1\n multiply PARAM1 0.5\n"
@@ -44,12 +44,12 @@ class GenerateTests(unittest.TestCase):
     def test_nested_guard_wraps_the_rest_of_its_block(self):
         out, _ = convert({"npc/a": "{ ev\n if ( A_SET )\n {\n if B_SET\n hp 5\n }\n gold 1\n}\n"
                                    "{ x\n setvard A_SET 1\n setvard B_SET 1\n}"}, "npc/a")
-        self.assertIn("if (A_SET && B_SET)\nSetHealth(5.0f);\nSetGold(1);", squash(out))
+        self.assertIn("if (A_SET && B_SET)\nSetHealth(5);\nSetGold(1);", squash(out))
 
     def test_else_if_chain(self):
         out, _ = convert({"npc/a": "{ ev\n local L 2\n if ( L == 1 ) hp 1\n else if ( L == 2 ) hp 2\n else hp 3\n}"},
                          "npc/a")
-        self.assertIn("if (l == 1)\nSetHealth(1.0f);\nelse if (l == 2)\nSetHealth(2.0f);\nelse\nSetHealth(3.0f);",
+        self.assertIn("if (l == 1)\nSetHealth(1);\nelse if (l == 2)\nSetHealth(2);\nelse\nSetHealth(3);",
                       squash(out))
 
     def test_local_assigned_in_a_block_is_declared_once_at_the_top(self):
@@ -76,13 +76,26 @@ class GenerateTests(unittest.TestCase):
         out, _ = convert({"npc/a": "{ ev\n callevent 1.5 other\n callevent PARAM1 other\n}\n{ other\n hp 1\n}"},
                          "npc/a")
         self.assertIn('CallEventDelayed(1.5f, "other");', out)
-        self.assertIn('CallEventOrDelay(param1, { "other" });', out)
+        self.assertIn('CallEventOrDelay(param1, "other");', out)
 
     def test_calleventloop_passes_the_iteration(self):
         out, _ = convert({"npc/a": "{ ev\n calleventloop 3 step\n}\n{ step\n local I game.script.iteration\n}"},
                          "npc/a")
-        self.assertIn("for (loopIteration = 0; loopIteration < 3; loopIteration++)", out)
+        self.assertIn("for (int i = 0; i < 3; i++)\n\t\t{\n\t\t\tloopIteration = i;\n\t\t\tOnStep();\n\t\t}", out)
         self.assertIn("int i = loopIteration;", out)
+
+    def test_nested_calleventloop_keeps_the_outer_index(self):
+        # the engine counts each loop on its own and puts the outer index back afterwards
+        src = ("{ ev\n calleventloop $get_token_amt(LIST) outer\n}\n"
+               "{ outer\n local IDX game.script.iteration\n calleventloop IDX inner\n}\n"
+               "{ inner\n breakloop\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        self.assertIn("int count = GetTokenCount(", out)
+        self.assertIn("for (int i = 0; i < count; i++)", out)
+        self.assertIn("int outerIteration = loopIteration;", out)
+        self.assertIn("loopIteration = outerIteration;", out)
+        self.assertIn("breakLoop = true;", out)
+        self.assertIn("if (breakLoop)\n\t\t\t{\n\t\t\t\tbreakLoop = false;\n\t\t\t\tbreak;\n\t\t\t}", out)
 
     def test_self_call_is_ignored_like_the_engine(self):
         out, project = convert({"npc/a": "{ ev\n callevent ev\n}"}, "npc/a")
@@ -173,9 +186,9 @@ class GenerateTests(unittest.TestCase):
     def test_relpos_forms(self):
         out, _ = convert({"npc/a": "{ ev\n local L_A $relpos(0,10,0)\n local L_B $relpos($vec(0,PARAM1,0),$vec(0,5,40))\n"
                                    " setvard A L_A\n setvard B L_B\n}"}, "npc/a")
-        self.assertIn("RelativePosition(Vector3(0.0f, 10.0f, 0.0f))", out)
+        self.assertIn("RelativePosition(Vector3(0, 10, 0))", out)
         # the offset of the two-vector form is kept; PARAM1 is a float because $vec takes numbers
-        self.assertIn("RelativePosition(Vector3(0.0f, param1, 0.0f), Vector3(0.0f, 5.0f, 40.0f))", out)
+        self.assertIn("RelativePosition(Vector3(0, param1, 0), Vector3(0, 5, 40))", out)
 
     def test_parameter_types_follow_their_uses(self):
         files = {"npc/a": "{ ev\n setvard SPEED PARAM1\n local L_N PARAM2\n add L_N 1\n if ( PARAM3 > 5 ) hp 1\n"

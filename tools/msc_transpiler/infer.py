@@ -154,6 +154,11 @@ class Inference:
         self._locals: dict[str, Evidence] = {}      # the current handler's locals
         # a parameter passed on as another event's parameter (callevent other PARAM2): same value
         self._param_links: dict[tuple[str, int], set[tuple[str, int]]] = defaultdict(set)
+        # calleventloop: the events run in loops, and the events that `breakloop` (or call one that does)
+        self.loop_events: set[str] = set()
+        self._breaks: set[str] = set()
+        self._calls: dict[str, set[str]] = defaultdict(set)
+        self._breaking: set[str] | None = None
 
     # -- collection ------------------------------------------------------------
 
@@ -225,6 +230,11 @@ class Inference:
             for a in args[:2]:
                 if isinstance(a, Name) and not param_index(a.text):
                     self.event_names.add(a.text)
+                    self._calls[event].add(a.text)
+            if name == "calleventloop" and len(args) > 1 and isinstance(args[1], Name):
+                self.loop_events.add(args[1].text)
+        if name == "breakloop":
+            self._breaks.add(event)
         if name in ("setvar", "setvard", "setvarg", "local") and args:
             target = cmd.args[0].text
             if name == "setvarg":
@@ -383,6 +393,20 @@ class Inference:
 
     # -- results -----------------------------------------------------------------
 
+    def breaks_loop(self, event: str) -> bool:
+        """Whether running the event can `breakloop` (itself or through an event it calls)."""
+        if self._breaking is None:
+            breaking = set(self._breaks)
+            changed = True
+            while changed:
+                changed = False
+                for caller, called in self._calls.items():
+                    if caller not in breaking and called & breaking:
+                        breaking.add(caller)
+                        changed = True
+            self._breaking = breaking
+        return event in self._breaking
+
     def field_types(self) -> dict[str, str]:
         if self._field_types is None:
             types: dict[str, str] = {name: STRING for name in self.fields}
@@ -480,6 +504,10 @@ def command_reads(cmd: Cmd, args: list[Expr], read) -> None:
     elif name in MATH_COMMANDS or name == "repeatdelay":
         for a in args:
             _expr_reads(a, True, read)      # the target's current value and the amount; a delay
+    elif name == "calleventloop" and args:
+        _expr_reads(args[0], True, read)    # the number of runs
+        for a in args[1:]:
+            _expr_reads(a, False, read)
     elif name in ("local", "setvar", "setvard", "setvarg"):
         for a in args[1:]:
             _expr_reads(a, False, read)

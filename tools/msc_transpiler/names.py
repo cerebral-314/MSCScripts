@@ -81,16 +81,17 @@ def class_name(script: str) -> str:
     return pascal(script.replace("\\", "/").split("/")[-1])
 
 
-def unique_class_names(scripts: list[str]) -> dict[str, str]:
-    """File stems are not unique across folders (edana/fletcher, helena/fletcher):
-    prefix the folder for those so every file gets one stable class name."""
+def unique_class_names(scripts: list[str], reserved: set[str] = frozenset()) -> dict[str, str]:
+    """File stems are not unique across folders (edana/fletcher, helena/fletcher), and some are
+    the names of engine functions (chests/quest and Quest()): prefix the folder for those so every
+    file gets one stable class name."""
     by_stem: dict[str, list[str]] = {}
     for script in scripts:
         by_stem.setdefault(class_name(script).lower(), []).append(script)
     names = {}
     for script in scripts:
         base = class_name(script)
-        if len(by_stem[base.lower()]) > 1:
+        if len(by_stem[base.lower()]) > 1 or base in reserved:
             parts = script.replace("\\", "/").split("/")
             base = "".join(pascal(p) for p in parts)
         names[script.lower()] = base

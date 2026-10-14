@@ -4,7 +4,7 @@ Usage (run from MSCScripts/tools):
   python -m msc_transpiler convert [--scripts DIR] [--out DIR] [--all | --family NAME | NAME ...]
       Writes scripts/angelscript/converted/<name>.as for each script (and the files it includes).
   python -m msc_transpiler runtime [--out DIR]
-      Regenerates the wrapper files in scripts/angelscript/runtime/ from mapping.py.
+      Regenerates scripts/angelscript/runtime/LegacyApi.txt (the engine API table) from mapping.py.
   python -m msc_transpiler report [--scripts DIR] [--all | NAME ...]
       Prints the legacy quirks found while converting.
   python -m msc_transpiler check --as-check EXE --config FILE [--out DIR] [--jobs N]
@@ -115,7 +115,8 @@ def cmd_check(args) -> int:
     for i, chunk in enumerate(chunks):
         list_file = root / f".check_{i}.txt"
         list_file.write_text("\n".join(chunk) + "\n", encoding="utf-8")
-        procs.append(subprocess.Popen([exe, "--config", config, "--root", str(root), "--quiet", "--keep", "--list", str(list_file)],
+        api = ["--api", str(root / "runtime" / "LegacyApi.txt")] if (root / "runtime" / "LegacyApi.txt").exists() else []
+        procs.append(subprocess.Popen([exe, "--config", config, *api, "--root", str(root), "--quiet", "--keep", "--list", str(list_file)],
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
     errors: list[str] = []
     failed = 0

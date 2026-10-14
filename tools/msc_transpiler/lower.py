@@ -24,8 +24,8 @@ from .ir import (ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Assi
                  Return, Stmt, TExpr)
 from .syntax import Cmd, CmdList, Event, Token
 from .context import FileContext, Signature
-from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, format_number, join, lit, missing_param,
-                     negate, number_code, string_literal, truthy)
+from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, float_arg, format_number, join, lit,
+                     missing_param, negate, number_code, string_literal, truthy)
 from .split import SplitLocals
 from .updates import UpdateCommands, _cmd_source
 
@@ -51,6 +51,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         self.menu_item = False          # reg.mitem.* written through a MenuItem
         self.inline_decls: set[int] = set()     # id(Cmd) of `local X v` lines that declare X in place
         self.aliases: dict[str, str] = {}       # local name -> parameter it only copies
+        self.loop_counts: set[str] = set()      # locals declared by calleventloop conversions
         self._prepare_locals()
         self._analyze_locals()
         self._find_splits(self._local_evidence_by_name)
@@ -422,6 +423,18 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
     def text(self, expr: Expr) -> TExpr:
         return self.value(expr, STRING)
 
+    def arg(self, expr: Expr) -> TExpr:
+        """A value for a parameter that takes any type (`const ?&in`): the engine writes it as .script
+        text, so it keeps its own type. A number literal the engine would write differently (50%,
+        +5, 007) stays text."""
+        if isinstance(expr, Number) and not _plain_number(expr):
+            return lit(expr.text)
+        return self.value(expr)
+
+    def args(self, exprs: list[Expr]) -> str:
+        """`, a, b, c` for the variadic part of a call (empty when there is none)."""
+        return "".join(f", {self.arg(a).code}" for a in exprs)
+
     def _value(self, expr: Expr, want: str | None) -> TExpr:
         if isinstance(expr, Literal):
             # 'PARAM' / 'PARAM4' as a value: the "not supplied" marker, which is empty here
@@ -441,7 +454,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         if isinstance(expr, Not):
             return negate(truthy(self.value(expr.operand)))
         if isinstance(expr, Vector):
-            parts = [self.value(p, FLOAT).code for p in expr.parts] + ["0.0f"] * (3 - len(expr.parts))
+            parts = [float_arg(self.value(p, FLOAT)) for p in expr.parts] + ["0"] * (3 - len(expr.parts))
             return TExpr(f"Vector3({', '.join(parts[:3])})", VECTOR)
         if isinstance(expr, Call):
             return self.call(expr)
@@ -514,7 +527,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         spec = mapping.FUNCTIONS.get(f"{name}/{len(args)}") or mapping.FUNCTIONS.get(name)
         if spec and spec.params == ["Vector3"] and len(args) == 3:
             # $relpos(0,10,0): three numbers written as one vector
-            x, y, z = (self.value(a, FLOAT).code for a in args)
+            x, y, z = (float_arg(self.value(a, FLOAT)) for a in args)
             converted = [TExpr(f"Vector3({x}, {y}, {z})", VECTOR)]
         elif spec and len(args) == len(spec.params):      # never drop an argument
             converted = [self.value(a, p) for a, p in zip(args, spec.params)]
@@ -524,23 +537,26 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             returns = STRING if spec.returns == "entity" else spec.returns
             if spec.template:
                 code = spec.template
+                call = re.match(r"\w+\(", code) is not None      # Vector3(...), Random(...)
                 for i, c in enumerate(converted):
-                    code = code.replace("{" + str(i) + "}", c.wrapped(MUL if "." in spec.template else ADD))
+                    if call and spec.params[i] == FLOAT:
+                        arg = float_arg(c)
+                    else:
+                        arg = c.wrapped(MUL if "." in spec.template else ADD)
+                    code = code.replace("{" + str(i) + "}", arg)
                 prec = ADD if " + " in code else (UNARY if code.startswith("-") else ATOM)
                 return TExpr(code, returns, prec)
-            return TExpr(f"{spec.method}({', '.join(c.code for c in converted)})", returns)
+            codes = [float_arg(c) if p == FLOAT else c.code for c, p in zip(converted, spec.params)]
+            return TExpr(f"{spec.method}({', '.join(codes)})", returns)
         # any other $function: the engine's own handler, with evaluated arguments
-        parts = [self.text(a).code for a in args]
-        arglist = f", {{ {', '.join(parts)} }}" if parts else ""
-        return TExpr(f"LegacyFunction({string_literal(name[1:])}{arglist})", STRING)
+        return TExpr(f"LegacyFunction({string_literal(name[1:])}{self.args(args)})", STRING)
 
     def _get_property(self, args: list[Expr]) -> TExpr:
-        entity = self.text(args[0])
+        entity = self.arg(args[0])
         prop = args[1].text
         if isinstance(args[1], Name) and (param_index(prop) or prop in self.locals or prop in self.ctx.fields
                                           or prop in self.ctx.dynamic_vars):
-            tail = "".join(f", {self.text(a).code}" for a in args[2:])
-            return TExpr(f"GetProp({entity.code}, {self.text(args[1]).code}{tail})", STRING)
+            return TExpr(f"GetProp({entity.code}, {self.text(args[1]).code}{self.args(args[2:])})", STRING)
         lower = prop.lower()
         base, _, component = lower.partition(".")
         if len(args) == 2 and component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
@@ -554,8 +570,8 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             return TExpr(f"{method}({entity.code})", STRING if t == "entity" else t)
         if len(args) == 3 and lower in mapping.GET_PROPERTIES_ARG:
             method, t = mapping.GET_PROPERTIES_ARG[lower]
-            return TExpr(f"{method}({entity.code}, {self.text(args[2]).code})", STRING if t == "entity" else t)
-        tail = "".join(f", {self.text(a).code}" for a in args[2:])
+            return TExpr(f"{method}({entity.code}, {self.arg(args[2]).code})", STRING if t == "entity" else t)
+        tail = self.args(args[2:])
         if lower.endswith((".x", ".y", ".z")) or lower.startswith(("origin.", "angles.", "velocity.")):
             return TExpr(f"Float(GetProp({entity.code}, {string_literal(prop)}{tail}))", FLOAT)
         return TExpr(f"GetProp({entity.code}, {string_literal(prop)}{tail})", STRING)
@@ -566,9 +582,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             sig = self.ctx.signatures.get(target.text)
             if sig.returns == "string":
                 return TExpr(f"{sig.method}({', '.join(self._event_args(sig, rest))})", STRING)
-        parts = [self.text(a).code for a in rest]
-        arglist = f", {{ {', '.join(parts)} }}" if parts else ""
-        return TExpr(f"CallFunction({self.text(target).code}{arglist})", STRING)
+        return TExpr(f"CallFunction({self.text(target).code}{self.args(rest)})", STRING)
 
     def _event_args(self, sig: Signature, args: list[Expr]) -> list[str]:
         return [self.value(a, t).code for (t, _), a in zip(sig.params, args)]
@@ -607,7 +621,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         if name == "setvarg":
             if not tokens:
                 return []
-            return [Line(f"SetGlobal({string_literal(tokens[0].text)}, {convert(self._concat(args[1:]), STRING).code})")]
+            return [Line(f"SetGlobal({string_literal(tokens[0].text)}, {self._any(args[1:], self._concat(args[1:])).code})")]
         if name == "local":
             return self._assign_local(cmd, tokens, args)
         if name in MATH_COMMANDS:
@@ -632,8 +646,10 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             if not args:
                 return []
             return [Line(f"CallEventDelayed({self.value(args[0], FLOAT).code}, {string_literal(self.event_name)})")]
-        if name in ("breakloop", "resetloop"):
-            return [Line(f'LegacyCommand("{name}")')]
+        if name == "breakloop":
+            return [Line("breakLoop = true")]       # the calleventloop running this stops after it
+        if name == "resetloop":
+            return [Line(f'LegacyCommand("{name}"{self.args(args)})')]
         if name.startswith("token.") and tokens:
             return self._token(cmd, name, tokens, args)
         return self._mapped_command(cmd, name, tokens, args)
@@ -672,9 +688,7 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
                 self.ctx.quirk(cmd.line, "parameters of a delayed callevent are dropped by the engine")
             return [Line(f"CallEventDelayed({convert(first_value, FLOAT).code}, {self.text(args[1]).code})")]
         # The engine decides at run time: a first argument starting with a digit is a delay
-        parts = [self.text(a).code for a in args]
-        tail = f", {{ {', '.join(parts[1:])} }}" if parts[1:] else ""
-        return [Line(f"CallEventOrDelay({parts[0]}{tail})")]
+        return [Line(f"CallEventOrDelay({self.arg(first).code}{self.args(args[1:])})")]
 
     def _calleventloop(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
         if len(args) < 2:
@@ -684,24 +698,54 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
         if event is None:
             if isinstance(rest[0], Number):
                 self.ctx.quirk(cmd.line, "calleventloop with a delay")
-            parts = [self.text(a).code for a in args]
-            return [Line(f'LegacyCommand("calleventloop", {{ {", ".join(parts)} }})')]
-        count = self.value(args[0], INT)
+            return [Line(f'LegacyCommand("calleventloop"{self.args(args)})')]
+        if event == self.event_name:
+            self.ctx.quirk(cmd.line, f"calleventloop {event} inside {event} is ignored by the engine")
+            return [Comment(f"(no effect in .script: an event cannot call itself) {_cmd_source(cmd)}")]
+        return self._loop(self.value(args[0], INT), event, rest[1:])
+
+    def _loop(self, count: TExpr, event: str, params: list[Expr]) -> list[Stmt]:
+        """calleventloop: the event runs `count` times (counted once, before the first run), each run
+        seeing its index as game.script.iteration (loopIteration); `breakloop` stops it. The index of
+        a loop this one runs inside is put back afterwards, as the engine does."""
         sig = self.ctx.signatures.get(event)
         self.ctx.uses_loop_iteration = True
-        call = f"{sig.method}({', '.join(self._event_args(sig, rest[1:]))})"
-        return [For(f"loopIteration = 0; loopIteration < {count.code}; loopIteration++", [Line(call)])]
+        taken = {ident for ident, _ in self.locals.values()} | {n for n, _ in self.params.values()}
+        index = next(n for n in ("i", "n", "iteration", "loopIndex") if n not in taken)
+        out: list[Stmt] = []
+        if count.literal is None and not (count.code in taken and names.is_identifier(count.code)):
+            name = next(n for n in ("count", "loops", "loopCount") if n not in taken and n != index)
+            out.append(self._loop_local(name, count.code))
+            count = TExpr(name, INT)
+        body: list[Stmt] = [Line(f"loopIteration = {index}"),
+                            Line(f"{sig.method}({', '.join(self._event_args(sig, params))})")]
+        if self.ctx.inference.breaks_loop(event):
+            body.append(If(TExpr("breakLoop", BOOL), [Line("breakLoop = false"), Line("break")]))
+        loop = For(f"int {index} = 0; {index} < {count.code}; {index}++", body)
+        if self.event_name not in self.ctx.inference.loop_events:
+            return out + [loop]
+        outer = next(n for n in ("outerIteration", "outerLoopIteration") if n not in taken)
+        return out + [self._loop_local(outer, "loopIteration"), loop, Line(f"loopIteration = {outer}")]
+
+    def _loop_local(self, name: str, value: str) -> Line:
+        """`int name = value` the first time; later loops of the handler reuse the variable. One first
+        needed inside a block is declared at the top of the method, so later loops anywhere see it."""
+        if name in self.loop_counts:
+            return Line(f"{name} = {value}")
+        self.loop_counts.add(name)
+        if self.depth == 0:
+            return Line(f"int {name} = {value}", declares=True)
+        self.top_declarations.append(Line(f"int {name}", declares=True))
+        return Line(f"{name} = {value}")
 
     def _callexternal(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
         if len(args) < 2:
             return []
         if isinstance(args[1], Number):
-            return [Line(f'LegacyCommand("callexternal", {{ {", ".join(self.text(a).code for a in args)} }})')]
-        target = self.text(args[0])
+            return [Line(f'LegacyCommand("callexternal"{self.args(args)})')]
+        target = self.arg(args[0])
         event = lit(args[1].text) if self._event_target(args[1]) is not None else self.text(args[1])
-        params = [self.text(a).code for a in args[2:]]
-        tail = f", {{ {', '.join(params)} }}" if params else ""
-        return [Line(f"CallExternal({target.code}, {event.code}{tail})")]
+        return [Line(f"CallExternal({target.code}, {event.code}{self.args(args[2:])})")]
 
     def _return(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
         if self.returns != "string":
@@ -730,26 +774,26 @@ class HandlerLowerer(UpdateCommands, SplitLocals):
             call = self._wrapper_call(spec, args)
             if call is not None:
                 return [Line(call)]
-        parts = [self.text(a).code for a in args]
-        arglist = f", {{ {', '.join(parts)} }}" if parts else ""
-        return [Line(f"LegacyCommand({string_literal(cmd.name)}{arglist})")]
+        return [Line(f"LegacyCommand({string_literal(cmd.name)}{self.args(args)})")]
 
     def _wrapper_call(self, spec: mapping.CommandSpec, args: list[Expr]) -> str | None:
+        """The command's function: fixed parameters converted to their types (entities take any
+        value), then either the remaining tokens joined into one text (commands that join them
+        themselves) or each remaining token as its own argument."""
         params = spec.params
-        has_text = bool(params) and params[-1].type == "text"
-        fixed = params[:-1] if has_text else params
+        rest_type = params[-1].type if params and params[-1].type in ("text", "...") else None
+        fixed = params[:-1] if rest_type else params
         required = len([p for p in fixed if not p.optional])
-        if len(args) < required or (not has_text and len(args) > len(fixed)):
+        if len(args) < required or (not rest_type and len(args) > len(fixed)):
             return None
-        if has_text and not params[-1].optional and len(args) <= len(fixed) and params[-1].name not in ("args", "params"):
-            # a required trailing text with nothing given: let the engine report it as before
-            if len(args) < len(fixed) + 1 and spec.params[-1].name not in ("name", "message", "description"):
-                pass
-        out = [self.value(a, p.type).code for p, a in zip(fixed, args)]
-        if has_text:
-            rest = args[len(fixed):]
-            if rest:
-                out.append(join([self.value(a) for a in rest], " ").code)
+        out = [self.arg(a).code if p.type == "entity" else
+               float_arg(self.value(a, p.type)) if p.type == FLOAT else self.value(a, p.type).code
+               for p, a in zip(fixed, args)]
+        rest = args[len(fixed):]
+        if rest_type == "text" and rest:
+            out.append(join([self.value(a) for a in rest], " ").code)
+        elif rest_type == "...":
+            out.extend(self.arg(a).code for a in rest)
         return f"{spec.method}({', '.join(out)})"
 
 
@@ -804,6 +848,17 @@ def _branch_assigns_first(stmts: list[Stmt], ident: str, word) -> bool:
 
 
 _MISSING_MARKER = re.compile(r"PARAM\d*")
+
+
+def _plain_number(number: Number) -> bool:
+    """A literal the engine writes back the same way when it is passed as a number."""
+    text = number.text
+    if text.endswith("%") or text.startswith("+") or "e" in text.lower():
+        return False
+    digits = text.lstrip("-")
+    if number.is_int:
+        return digits == "0" or not digits.startswith("0")
+    return True
 
 
 def _all_cmds(cmds: CmdList):
