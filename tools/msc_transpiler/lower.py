@@ -107,6 +107,12 @@ class HandlerLowerer(UpdateCommands, SplitLocals, EventCalls):
             if ev.math and t == STRING and not ev.literal_strings:
                 # arithmetic on a copy of a text variable: keep the local numeric
                 t = FLOAT if ev.floats else (FLOAT if ev.math else INT)
+            # whether it holds entities is decided with every handler of the event (entity_flow.py)
+            handle = self.ctx.inference.entity_type(("local", self.event_name, name))
+            if handle is not None:
+                t = handle
+            elif t in HANDLES:
+                t = STRING
             self.locals[name] = (ident, t)
 
     WRITE_COMMANDS = {"local", "setvar", "setvard", "stradd", "strconc", "vectoradd", "vectormultiply", "vectorscale",
@@ -767,7 +773,7 @@ def _entity_compare(lv: TExpr, rv: TExpr, cop: str) -> TExpr:
     if lv.type in HANDLES and rv.type in HANDLES:
         return TExpr(f"{lv.code} {'is' if cop == '==' else '!is'} {rv.code}", BOOL, EQUALITY)
     entity, other = (lv, rv) if lv.type in HANDLES else (rv, lv)
-    if other.literal in ("0", ""):
+    if other.literal is not None and other.literal.lower() in ("0", "", "none"):    # the engine's "no entity"
         return TExpr(f"{entity.code} {'is' if cop == '==' else '!is'} null", BOOL, EQUALITY)
     left, right = convert(lv, STRING), convert(rv, STRING)
     return TExpr(f"{left.wrapped(ADD)} {cop} {right.wrapped(ADD)}", BOOL, EQUALITY)

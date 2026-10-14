@@ -94,14 +94,23 @@ output uses a handle instead:
 
 * Parameters the engine fills with an entity: the entity parameters of `mapping.ENGINE_EVENTS`
   (`CBaseEntity@ attacker`), and players where the engine only ever passes one (`game_playerused`,
-  `game_menu_getoptions`, … : `CBasePlayer@ player`).
+  `game_menu_getoptions`, … : `CBasePlayer@ player`). That includes events the engine fires under a
+  name the script picks: `<x>_dodamage` for `dmgevent:<x>`, and `<x>_damaged_other` / `<x>_strike` for
+  an attack whose `reg.attack.callback` is `<x>` (directly or through a constant).
 * Menu item callbacks (`local reg.mitem.callback confirm_forget_spell`): the engine passes the player
   and the item's data, so `void OnConfirmForgetSpell(CBasePlayer@ player, int spellIndex)` takes the
   type of what the menu stores in `reg.mitem.data`.
-* `$get(x,id)`, `$get(x,owner)`, `$get(x,target)`, `$get_by_name(...)`; `$get(ent_me,id)` is `self`.
-* Parameters, locals and fields that only ever hold such entities and are never compared with text
-  (an event's parameter only when every caller passes an entity), and fields set only from parameters
-  take those parameters' type (`SPELL_TO_FORGET_IDX = spellIndex` is an `int`).
+* `$get(x,id)`, `$get(x,owner)`, `$get(x,target)`, `$get_by_name(...)`; `$get(ent_me,id)` is `self`; an
+  entry of a list of entities (`$get_token(TARGS, i)` where `TARGS` only ever holds `$get_tsphere`,
+  `$get_tbox`, `$sort_entlist` or `getplayers` lists).
+
+`entity_flow.py` follows these values through `setvard`, `local`, `callevent`, `calleventloop`,
+`callexternal` and `$func` across the whole corpus. A field, local or parameter becomes a handle when
+everything that flows into it is an entity (or "0"/"" for none) and it is never used as a number or
+compared with other text; an event's parameter also needs at least one caller that passes an entity. So
+some stay text on purpose: `send_damage`'s target is also given a position (`ice_spikes` passes
+`DMG_POS`, and `dodamage` takes either), and fields such as `NPCATK_TARGET` also hold `unset`. Fields
+set only from parameters take those parameters' type (`SPELL_TO_FORGET_IDX = spellIndex` is an `int`).
 
 A handle is assigned with `@x = y` and compared with `is` (`attacker is self`, `target !is null`: "0" is
 what the engine gives for no entity). Where text is needed it is `EntityId(x)`, the same id `.script`
@@ -145,6 +154,7 @@ ASCII as `\xHH`, which AngelScript stores as that exact byte.
 | `updates.py` | Commands that set a variable (assignments, math, text, vector, token) |
 | `calls.py` | Events calling events: `callevent`, `calleventloop`, `callexternal`, `$func`, `return` |
 | `split.py` | Locals used as a number and as text: split into the number and its text |
+| `entity_flow.py` | Which fields, parameters and locals hold entities (CBaseEntity@ / CBasePlayer@) |
 | `values.py`, `context.py` | Typed values and the interpreter's implicit conversions; per-file context and event signatures |
 | `generate.py` | Files → mixins, fields, handlers, load-time work |
 | `entity.py` | Each file's `[script]` class: its base class, mixins, inherited fields and constructor |

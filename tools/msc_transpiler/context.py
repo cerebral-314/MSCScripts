@@ -94,7 +94,7 @@ class SignatureTable:
     def get(self, event: str) -> Signature:
         if event in self._cache:
             return self._cache[event]
-        spec = mapping.ENGINE_EVENTS.get(event)
+        spec = self.inference.engine_spec(event)
         count = max(self.inference.max_param.get(event, 0), len(spec.params) if spec else 0)
         params: list[tuple[str, str]] = []
         used: set[str] = set()

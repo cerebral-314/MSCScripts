@@ -26,6 +26,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field, replace
 
 from . import mapping
+from .entity_flow import NULL_TEXT, EntityFlow
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token
 from .syntax import Cmd, CmdList, ParsedFile, Token
 
@@ -164,10 +165,11 @@ def call_type(call: Call) -> str:
     return STRING
 
 
-class Inference:
+class Inference(EntityFlow):
     """Collects evidence from parsed files and resolves types."""
 
     def __init__(self) -> None:
+        self._init_flow()
         self.fields: dict[str, Evidence] = defaultdict(Evidence)
         self.params: dict[tuple[str, int], Evidence] = defaultdict(Evidence)   # (event, n)
         self.param_names: dict[tuple[str, int], dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -202,6 +204,7 @@ class Inference:
             for op in event.load_ops:
                 if op.kind in ("const", "setvar"):
                     self._assign(self.fields[op.name], parse_token(op.value, op.quoted), [])
+                    self.note_literal_value(op.name, op.value)
             local_names: set[str] = set()
             self._collect_locals(event.commands, local_names)
             self._locals = defaultdict(Evidence)
@@ -251,6 +254,11 @@ class Inference:
                 ev.text_reads += 1
         command_reads(cmd, args, field_read)
 
+        def flow_read(text: str, numeric: bool) -> None:
+            if numeric:
+                self.flow_use(self.flow_node(event, text, locals_), "number")
+        command_reads(cmd, args, flow_read)
+
         for i, a in enumerate(args):
             for sub in _walk_expr(a):
                 if isinstance(sub, Name):
@@ -259,6 +267,8 @@ class Inference:
                         self.max_param[event] = max(self.max_param[event], index)
                 if isinstance(sub, Call) and sub.name.lower() == "$func" and sub.args and isinstance(sub.args[0], Name):
                     self.called_as_function.add(sub.args[0].text)
+                    for n, value in enumerate(sub.args[1:], start=1):
+                        self.flow_value(("param", sub.args[0].text, n), value, event, locals_, 1, self._entity_call)
 
         if name in ("callevent", "calleventloop") and args:
             for a in args[:2]:
@@ -273,6 +283,25 @@ class Inference:
             self._menu_item[cmd.args[0].text.lower()[len("reg.mitem."):]] = args[1]
         if name == "menuitem.register":
             self._register_menu_item(event, locals_)
+        self.note_engine_aliases(name, cmd.args[0].text if cmd.args else "", args[1:] if name == "local" else args)
+        if name in ("setvar", "setvard", "local") and args:
+            node = self.flow_node(event, cmd.args[0].text, locals_ if name == "local" else set())
+            if node is not None and not (name == "local" and node[0] == "field"):
+                value, count = args[1] if len(args) == 2 else None, max(1, len(args) - 1)
+                self.flow_value(node, value, event, locals_, count, self._entity_call)
+                self.flow_list_value(node, value, event, locals_, count)
+        elif name == "token.add" and len(args) == 2:
+            node = self.flow_node(event, cmd.args[0].text, locals_)
+            if node is not None:
+                self.flow_use(node, "number")          # a list is no entity
+                self.flow_list_value(node, args[1], event, locals_, 1, added=True)
+        elif name in ("getplayers", "getplayersnb") and args:
+            node = self.flow_node(event, cmd.args[0].text, locals_)
+            if node is not None:
+                self.flow_value(node, None, event, locals_)
+                self.flow_player_list(node)
+        elif args and (name in MATH_COMMANDS or name in STRING_COMMANDS or name in VECTOR_COMMANDS):
+            self.flow_use(self.flow_node(event, cmd.args[0].text, locals_), "number")
         if name in ("setvar", "setvard", "setvarg", "local") and args:
             target = cmd.args[0].text
             if name == "setvarg":
@@ -312,8 +341,8 @@ class Inference:
             self.returns.add(event)
 
         # literal values passed to an event: callevent <event> a b / callexternal <target> <event> a b
-        if name in ("callevent", "callexternal") and args:
-            start = 1 if name == "callexternal" else 0
+        if name in ("callevent", "callexternal", "calleventloop") and args:
+            start = {"callexternal": 1, "calleventloop": 1}.get(name, 0)
             if name == "callevent" and isinstance(args[0], Number):
                 start = None                 # delayed: the engine drops the parameters
             if start is not None and len(args) > start and isinstance(args[start], Name):
@@ -321,6 +350,9 @@ class Inference:
                 for i, value in enumerate(args[start + 1:], start=1):
                     if isinstance(value, Call) and value.name.lower() == "$pass" and value.args:
                         value = value.args[0]
+                    self.flow_value(("param", called, i), value, event, locals_, 1, self._entity_call)
+                    if name == "calleventloop":
+                        continue
                     if isinstance(value, (Number, Literal, Call)):
                         self._assign(self.params[(called, i)], value, [])
                     elif isinstance(value, Name) and not param_index(value.text):
@@ -342,6 +374,8 @@ class Inference:
         if spec:
             for param, arg in zip(spec.params, args):
                 self._typed_use(event, param.type, arg)
+                if param.type == "Vector3" and isinstance(arg, Name):
+                    self.flow_use(self.flow_node(event, arg.text, locals_), "number")
         # ... and as typed $function arguments ($get's first argument is an entity)
         for a in args:
             for sub in _walk_expr(a):
@@ -352,6 +386,8 @@ class Inference:
                     if fspec and len(fspec.params) == len(sub.args):
                         for ptype, arg in zip(fspec.params, sub.args):
                             self._typed_use(event, ptype, arg)
+                            if ptype == "Vector3" and isinstance(arg, Name):
+                                self.flow_use(self.flow_node(event, arg.text, locals_), "number")
 
     def _typed_use(self, event: str, type_: str, arg: Expr) -> None:
         if isinstance(arg, Call) and arg.name.lower() == "$pass" and arg.args:
@@ -383,6 +419,16 @@ class Inference:
             for side, other in ((args[0], args[2]), (args[2], args[0])):
                 if not isinstance(side, Name):
                     continue
+                node = self.flow_node(event, side.text, locals_)
+                if op in NUMERIC_OPS and isinstance(other, Number):
+                    self.flow_use(node, "number")
+                elif op in ("equals", "isnot", "!equals", "startswith", "!startswith", "contains", "!contains"):
+                    if _is_missing_marker(other, op) or isinstance(other, (Number, Literal)) \
+                            and other.text.lower() in NULL_TEXT + ("none",):
+                        self.flow_use(node, "null")
+                    elif isinstance(other, (Number, Literal)) or isinstance(other, Name) \
+                            and self.flow_node(event, other.text, locals_) is None:
+                        self.flow_use(node, "text")
                 index = param_index(side.text)
                 evidence = self.params[(event, index)] if index else self._target(side.text, locals_)
                 if evidence is None:
@@ -452,6 +498,11 @@ class Inference:
                 evidence.entities += 1
                 evidence.players += t == PLAYER
 
+    @staticmethod
+    def _entity_call(call: Call) -> str | None:
+        t = call_type(call)
+        return t if t in HANDLES else None
+
     def _register_menu_item(self, event: str, locals_: set[str]) -> None:
         """menuitem.register: the callbacks of the item get the player and the item's data."""
         data = self._menu_item.get("data")
@@ -478,7 +529,7 @@ class Inference:
     def known_param_type(self, event: str, index: int) -> str | None:
         """An entity parameter the engine guarantees: an engine event's entity, the player of a menu
         item's callback."""
-        spec = mapping.ENGINE_EVENTS.get(event)
+        spec = self.engine_spec(event)
         if spec and index <= len(spec.params):
             return handle_type(spec.params[index - 1].type)
         if event in self.menu_callbacks and index == 1:
@@ -533,6 +584,12 @@ class Inference:
             for name, t in fed.items():
                 if t is not None:
                     types[name] = t
+            for name in types:
+                handle = self.entity_type(("field", name))
+                if handle is not None:
+                    types[name] = handle
+                elif types[name] in HANDLES:
+                    types[name] = STRING
             if self._param_types:
                 self._param_types.clear()       # typed before the fields were final
         return self._field_types
@@ -582,8 +639,11 @@ class Inference:
             others = [f for f in found if f not in HANDLES]
             if others:
                 t = others[0]
-            elif found:
-                t = PLAYER if all(f == PLAYER for f in found) else ENTITY
+        handle = self.entity_type(("param", event, index))
+        if handle is not None:
+            t = handle
+        elif t in HANDLES:
+            t = STRING
         self._param_types[key] = t or STRING
         return self._param_types[key]
 

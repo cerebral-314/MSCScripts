@@ -406,9 +406,9 @@ ENGINE_EVENTS: dict[str, EventSpec] = {
     "game_damaged_other": E("entity target, float damage, string damageType, string damageEvent"),
     "game_struck": E("float damage"),
     "game_attacked": E("entity attacker, float damage, string damageType"),
-    "game_dodamage": E("string hit, entity target, Vector3 start, Vector3 end, string damageType, float damage"),
+    "game_dodamage": E("bool hit, entity target, Vector3 start, Vector3 end, string damageType, string damageText"),
     "game_heardsound": E("string soundType, Vector3 origin, float dangerRadius"),
-    "game_heardtext": E("string text, entity speaker"),
+    "game_heardtext": E("string text, player speaker"),
     "game_menu_getoptions": E("player player"),
     "game_menu_cancel": E("player player"),
     "game_playerused": E("player player"),     # CMSMonster::Used ignores anything but players
@@ -427,6 +427,33 @@ ENGINE_EVENTS: dict[str, EventSpec] = {
     "game_hitground": E("float fallVelocity"),
     "game_takedamage": E("entity attacker, entity inflictor, float damage, string damageType"),
     "game_protect": E("entity attacker, float damage, string damageType"),
+    "game_damaged_end": E("entity attacker, float damage"),
+    "game_hitarmor": E("entity wearer, string armor, float damage"),
+    "game_drain_death": E("entity attacker"),
+    "game_used": E("entity activator, entity caller, int useType, float value"),
+    "game_playerspawn": E("player player"),
+    "game_playerjoin": E("player player"),
+    "game_playerleave": E("player player"),
+    "game_playerspeak": E("player player, int sayType, string text"),
+    "game_gave_gold": E("player player, int price"),
+    "game_confirm_buy": E("player player, string itemName, string itemScript, string skill"),
+    "game_player_got_from_store": E("entity item, entity vendor"),
+    "game_equipped": E("entity item"),
+    "game_container_removeditem": E("entity item"),
+    "game_attempt_unlock": E("entity owner"),
+    "game_monsterspawn_removed": E("entity spawner"),
+    "game_applyeffect": E("string command, entity caller, string effect"),
+    "game_newlevel": E("string map"),
+    "game_helptip": E("string title, string tip"),
     # passed by whatever fires it (use triggers, other scripts): named in data/param_names.json
     "game_activate": E(""),
+    # an item's attack hit something (besides <callback>_damaged_other, see ENGINE_EVENT_FORMS)
+    "weapon_damaged_other": E("entity target, float damage, string damageType, string damageEvent"),
+}
+
+# Events the engine fires under names a script chooses (entity_flow.note_engine_aliases):
+# dmgevent:<x> runs <x>_dodamage like game_dodamage, an attack's callback <x> runs
+# <x>_damaged_other like game_damaged_other and <x>_strike as below.
+ENGINE_EVENT_FORMS: dict[str, EventSpec] = {
+    "attack_strike": E("string hitType, Vector3 endPos, entity hitEntity, bool hit"),
 }

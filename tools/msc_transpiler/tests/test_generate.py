@@ -267,6 +267,30 @@ class GenerateTests(unittest.TestCase):
         self.assertIn('LegacyCommand("wipespell", ', out)
         self.assertIn("OnTstForgetCb(PlayerParam(params, 0), Int(Param(params, 1)))", out)
 
+    def test_entities_flow_through_locals_lists_and_calls(self):
+        src = ("{ game_damaged\n local L_ATK PARAM1\n callevent hit_back L_ATK\n"
+               " setvard TARGS $get_tsphere(enemy,256)\n calleventloop $get_token_amt(TARGS) hit_one\n}\n"
+               "{ hit_back\n dodamage PARAM1 direct 5 100%\n}\n"
+               "{ hit_one\n local CUR $get_token(TARGS,game.script.iteration)\n callevent hit_back CUR\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        self.assertIn("void OnHitBack(CBaseEntity@ param1 = null)", out)
+        self.assertIn("OnHitBack(attacker);", out)
+        self.assertIn("CBaseEntity@ cur = FindEntity(GetToken(TARGS, loopIteration));", out)
+        self.assertIn("DoDamage(param1, \"direct\", 5, \"100%\");", out)
+
+    def test_a_target_that_may_be_a_position_stays_text(self):
+        # dodamage takes an entity or an origin: a caller passing a position keeps the parameter text
+        src = ("{ game_damaged\n callevent send_dmg PARAM1\n}\n{ other\n callevent send_dmg (1,2,3)\n}\n"
+               "{ send_dmg\n dodamage PARAM1 direct 5 100%\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        self.assertIn("void OnSendDmg(string param1 = \"\")", out)
+
+    def test_attack_callback_events_have_the_engines_parameters(self):
+        src = ("{\n const ATK_CB swipe\n}\n{ game_spawn\n local reg.attack.callback ATK_CB\n registerattack\n}\n"
+               "{ swipe_damaged_other\n applyeffect PARAM1 effects/x 5\n}")
+        out, _ = convert({"items/a": src}, "items/a")
+        self.assertIn("void OnSwipeDamagedOther(CBaseEntity@ target = null, float damage = 0.0f", out)
+
     def test_entity_values_compare_as_entities(self):
         src = ("{ game_damaged\n if PARAM1 equals $get(ent_me,id) hp 1\n"
                " if ( PARAM1 isnot 0 ) hp 2\n setvard LAST_HIT $get(PARAM1,id)\n}")
