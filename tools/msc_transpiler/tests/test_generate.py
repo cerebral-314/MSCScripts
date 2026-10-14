@@ -197,6 +197,13 @@ class GenerateTests(unittest.TestCase):
         self.assertIn('OnTestEventWithoutNames(string param1 = "")', out)
         self.assertIn("if (!param1.isEmpty())", out)
 
+    def test_entity_ids_stay_text(self):
+        files = {"npc/a": "{\n setvard THE_PLAYER 0\n}\n{ test_event_without_names\n setvard THE_PLAYER PARAM1\n"
+                          " hp $get(PARAM2,hp)\n}\n{ x\n callevent test_event_without_names 0 1\n}"}
+        out, _ = convert(files, "npc/a")
+        self.assertIn("string THE_PLAYER", out)        # reset with 0, but it holds what callers pass
+        self.assertIn('OnTestEventWithoutNames(string param1 = "", string param2 = "")', out)   # $get(PARAM2,...)
+
     def test_nothing_is_written_after_a_return(self):
         from msc_transpiler.emit import emit_method
         from msc_transpiler.ir import Line, Method, Return

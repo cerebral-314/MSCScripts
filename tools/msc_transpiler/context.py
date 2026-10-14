@@ -4,10 +4,15 @@ event signatures, and the quirks found while converting it."""
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import mapping, names
+
+# A parameter named for an entity holds an entity id, which is text ("PentP(...)")
+ENTITY_NAME = re.compile(r"(attacker|target|player|owner|caster|entity|victim|killer|summoner|creator|activator|"
+                         r"inflictor|enemy|ally|npc|monster|master|user|toucher|sender)(Id|Ent)?\d*$", re.I)
 
 # Reviewed parameter names: event -> {"1": "goldPerBag", ...}. Engine events are named in mapping.py;
 # the rest were proposed from each parameter's comments and uses, and can be edited by hand.
@@ -19,7 +24,7 @@ def _load_param_names() -> dict[str, dict[str, str]]:
         return json.loads(PARAM_NAMES.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-from .infer import BOOL, INT, STRING, Evidence, Inference
+from .infer import BOOL, FLOAT, INT, STRING, Evidence, Inference
 
 
 # ----------------------------------------------------------------------------------------
@@ -115,6 +120,8 @@ class SignatureTable:
             elif counts:
                 best = max(counts.items(), key=lambda kv: kv[1])[0]
                 pname = names.local(best)
+            if ENTITY_NAME.search(pname) and type_ in (INT, FLOAT, BOOL):
+                type_ = STRING
             while pname in used or pname in names.AS_KEYWORDS:
                 pname += "_"
             used.add(pname)

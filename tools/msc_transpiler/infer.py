@@ -44,6 +44,7 @@ class Evidence:
     vector_ops: int = 0       # target of vectoradd / vectorset / vectormultiply
     math: int = 0             # target of arithmetic
     numeric_compare: int = 0  # compared with == < ... against a number
+    from_params: int = 0      # set from an event parameter (setvard X PARAM1)
     copies: set[str] = field(default_factory=set)   # assigned from another variable
 
     def resolve(self, others: dict[str, str]) -> str:
@@ -72,6 +73,10 @@ class Evidence:
         if self.vector_ops and not literal_strings and not self.math and not self.numeric_compare:
             return VECTOR
         if strings:
+            return STRING
+        # holds what callers pass (entity ids, names) and is never used as a number: text, even
+        # when it is also reset with 0
+        if self.from_params and not (self.math or self.numeric_compare or floats or vectors):
             return STRING
         if vectors:
             return VECTOR if not (ints or floats or self.math) else STRING
@@ -216,6 +221,7 @@ class Inference:
                         self._param_locals[(event, index)].append(self._locals[target])
                 elif name in ("setvar", "setvard") and not param_index(target):
                     self.params[(event, index)].copies.add(target)
+                    self.fields[target].from_params += 1
             evidence = self._target(target, locals_ if name == "local" else set())
             if evidence is not None:
                 self._assign(evidence, args[1] if len(args) == 2 else None, args[1:], locals_)
@@ -264,9 +270,11 @@ class Inference:
         if spec:
             for param, arg in zip(spec.params, args):
                 self._typed_use(event, param.type, arg)
-        # ... and as typed $function arguments
+        # ... and as typed $function arguments ($get's first argument is an entity)
         for a in args:
             for sub in _walk_expr(a):
+                if isinstance(sub, Call) and sub.name.lower() in ("$get", "$get_by_name") and sub.args:
+                    self._typed_use(event, "entity", sub.args[0])
                 if isinstance(sub, Call):
                     fspec = mapping.FUNCTIONS.get(f"{sub.name}/{len(sub.args)}") or mapping.FUNCTIONS.get(sub.name)
                     if fspec and len(fspec.params) == len(sub.args):
@@ -276,12 +284,17 @@ class Inference:
     def _typed_use(self, event: str, type_: str, arg: Expr) -> None:
         if isinstance(arg, Call) and arg.name.lower() == "$pass" and arg.args:
             arg = arg.args[0]
-        if type_ not in ("int", "float", "bool", "Vector3") or not isinstance(arg, Name):
+        if type_ not in ("int", "float", "bool", "Vector3", "entity") or not isinstance(arg, Name):
             return
         index = param_index(arg.text)
         if not index:
             return
         ev = self.params[(event, index)]
+        if type_ == "entity":
+            # an entity id is text ("PentP(...)"): never a number, whatever callers pass
+            ev.strings += 1
+            ev.literal_strings += 1
+            return
         if type_ == "Vector3":
             ev.vectors += 1
         elif type_ == "float":
@@ -397,7 +410,7 @@ class Inference:
         evidence = self.params.get(key, Evidence())
         combined = Evidence(evidence.ints, evidence.floats, evidence.bools, evidence.strings, evidence.literal_strings,
                             evidence.vectors, evidence.vector_ops, evidence.math, evidence.numeric_compare,
-                            set(evidence.copies))
+                            evidence.from_params, set(evidence.copies))
         field_types = self.field_types()
         for local in self._param_locals.get(key, []):
             t = local.resolve(field_types)
