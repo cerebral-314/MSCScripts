@@ -44,6 +44,8 @@ modules of one process alive, as the game does, so the shared classes are compil
 | `setvard STEP 359` then `divide STEP N` | `STEP = Divide(359.0f, N);` — step-by-step updates folded into one expression |
 | `add COUNT 1` on a name nothing else sets | field `COUNT`, `COUNT += 1.0f;` (math commands store a script variable) |
 | blank lines between commands | kept, so the source's grouping survives |
+| a local used as a count, then as a message | two locals: `int nNpcs` for the tests and `string nNpcsText` for the message |
+| a variable only ever read as a number | a number (`int handpref = Int(GetProp(item, "handpref"))`), whatever text it is assigned |
 | `local L_ITEM PARAM2` | parameter or local `item` (camelCase, `L_` dropped) |
 | `if ( A equals B )` / `else if` | `if (A == B)` / `else if` |
 | `if X` (no parentheses) | early `return` at the top of a handler, otherwise wraps the rest of its block |
@@ -93,6 +95,7 @@ ASCII as `\xHH`, which AngelScript stores as that exact byte.
 | `infer.py` | Picks a type per variable (int/float/bool/string/Vector3) from how the whole corpus uses it |
 | `lower.py`, `ir.py`, `emit.py` | One handler → one method, with `Script_ExecuteCmds` control flow and readable output |
 | `updates.py` | Commands that set a variable (assignments, math, text, vector, token) |
+| `split.py` | Locals used as a number and as text: split into the number and its text |
 | `values.py`, `context.py` | Typed values and the interpreter's implicit conversions; per-file context and event signatures |
 | `generate.py` | Files → mixins, fields, handlers, load-time work |
 | `entity.py` | Each file's `[script]` class: its base class, mixins, inherited fields and constructor |

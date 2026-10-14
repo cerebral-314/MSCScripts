@@ -64,6 +64,13 @@ class UpdateCommands:
             return [Line(f"SetLocal({string_literal(target)}, {convert(value, STRING).code})")]
         if target in self.aliases:
             return []        # the local is just the parameter
+        if target in self.splits:
+            declare = id(cmd) in self.inline_decls and target not in self.declared
+            if declare:
+                self.declared.add(target)
+            elif target not in self.declared:
+                self._declare_early(target)
+            return self._split_assign(target, value, declare)
         ident, t = self.locals[target]
         code = convert(value, t).code
         if id(cmd) in self.inline_decls and target not in self.declared:
@@ -73,7 +80,12 @@ class UpdateCommands:
             self._declare_early(target)
         return [Line(f"{ident} = {code}", assign=Assign(ident, t, value))]
 
-    def _lvalue(self, name: str) -> TExpr | None:
+    def _lvalue(self, name: str, numeric: bool = False) -> TExpr | None:
+        """The variable a command changes. A split local (split.py) gives its number for math."""
+        if name in self.splits:
+            if name not in self.declared:
+                self._declare_early(name)
+            return self._split_target(name, numeric)
         index = param_index(name)
         if index and index in self.params:
             n, t = self.params[index]
@@ -108,7 +120,7 @@ class UpdateCommands:
         if name == "subract":
             self.ctx.quirk(cmd.line, "`subract` is not a command; the engine drops this line")
             return [Comment(f"(no effect in .script: unknown command) subract {' '.join(t.text for t in tokens)}")]
-        target = self._lvalue(tokens[0].text)
+        target = self._lvalue(tokens[0].text, numeric=True)
         if target is None:
             return self._legacy(name, tokens[0].text, args[1:])
         if name == "capvar":

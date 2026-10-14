@@ -73,6 +73,8 @@ def convert(e: TExpr, want: str | None) -> TExpr:
         want = STRING
     if want is None or want == e.type:
         return e
+    if e.numeric is not None and want in (INT, FLOAT, BOOL):
+        return convert(e.numeric, want)
     t = e.type
     if e.literal is not None:
         folded = _fold_literal(e, want)
@@ -120,6 +122,8 @@ def _fold_literal(e: TExpr, want: str) -> TExpr | None:
 
 def truthy(e: TExpr) -> TExpr:
     """`if X` is atoi(X) != 0."""
+    if e.numeric is not None:
+        return truthy(e.numeric)
     if e.literal is not None:
         return TRUE if c_atoi(e.literal) != 0 else FALSE
     if e.type == BOOL:

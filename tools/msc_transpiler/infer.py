@@ -46,6 +46,8 @@ class Evidence:
     numeric_compare: int = 0  # compared with == < ... against a number
     from_params: int = 0      # set from an event parameter (setvard X PARAM1)
     copies: set[str] = field(default_factory=set)   # assigned from another variable
+    numeric_reads: int = 0    # read as a number (numeric tests, `if X`, math, numeric arguments)
+    text_reads: int = 0       # read as text (text tests, printing, text arguments, copies)
 
     def resolve(self, others: dict[str, str]) -> str:
         strings, vectors = self.strings, self.vectors
@@ -72,6 +74,10 @@ class Evidence:
         # from text (Vec() reads them as the engine's StringToVec does)
         if self.vector_ops and not literal_strings and not self.math and not self.numeric_compare:
             return VECTOR
+        # only ever read as a number and never given literal text: a number, whatever text
+        # expressions it is assigned (they are converted where they are assigned)
+        if strings and not literal_strings and self.numeric_reads and not self.text_reads and not vectors:
+            return FLOAT if (floats or self.math or not (ints or bools)) else INT
         if strings:
             return STRING
         # holds what callers pass (entity ids, names) and is never used as a number: text, even
@@ -194,6 +200,17 @@ class Inference:
     def _command(self, event: str, cmd: Cmd, locals_: set[str]) -> None:
         name = cmd.name.lower()
         args = [parse_token(t.text, t.quoted) for t in cmd.args]
+
+        def field_read(text: str, numeric: bool) -> None:
+            if text in locals_ or param_index(text) or not text[:1].isalpha() \
+                    or text.lower().startswith(("game.", "const.", "ent_")):
+                return
+            ev = self.fields[text]
+            if numeric:
+                ev.numeric_reads += 1
+            else:
+                ev.text_reads += 1
+        command_reads(cmd, args, field_read)
 
         for i, a in enumerate(args):
             for sub in _walk_expr(a):
@@ -448,6 +465,47 @@ def header_param_names(comment: str) -> dict[int, str]:
         if word and not word[0].isdigit():
             names_[i] = word
     return names_
+
+
+def command_reads(cmd: Cmd, args: list[Expr], read) -> None:
+    """Call read(name, numeric) for every variable the command reads: numeric for numeric tests,
+    `if X`, math and numeric arguments; text for everything else."""
+    name = cmd.name.lower()
+    if cmd.conditional and len(args) == 3:
+        op = args[1].text if isinstance(args[1], Name) else ""
+        for side in (args[0], args[2]):
+            _expr_reads(side, op in NUMERIC_OPS, read)
+    elif cmd.conditional and len(args) == 1:
+        _expr_reads(args[0], True, read)
+    elif name in MATH_COMMANDS or name == "repeatdelay":
+        for a in args:
+            _expr_reads(a, True, read)      # the target's current value and the amount; a delay
+    elif name in ("local", "setvar", "setvard", "setvarg"):
+        for a in args[1:]:
+            _expr_reads(a, False, read)
+    elif name in STRING_COMMANDS or name in VECTOR_COMMANDS:
+        for a in args:
+            _expr_reads(a, False, read)     # they read the text
+    else:
+        spec = mapping.COMMANDS.get(name)
+        types = [p.type for p in spec.params] if spec else []
+        for i, a in enumerate(args):
+            _expr_reads(a, i < len(types) and types[i] in ("int", "float", "bool"), read)
+
+
+def _expr_reads(expr: Expr, numeric: bool, read) -> None:
+    if isinstance(expr, Not):
+        _expr_reads(expr.operand, numeric, read)
+    elif isinstance(expr, Name):
+        read(expr.text, numeric)
+    elif isinstance(expr, Call):
+        spec = mapping.FUNCTIONS.get(f"{expr.name.lower()}/{len(expr.args)}") or mapping.FUNCTIONS.get(expr.name.lower())
+        types = spec.params if spec and len(spec.params) == len(expr.args) else []
+        for i, a in enumerate(expr.args):
+            _expr_reads(a, i < len(types) and types[i] in ("int", "float", "bool"), read)
+    elif isinstance(expr, Vector):
+        for p in expr.parts:
+            _expr_reads(p, True, read)
 
 
 def _is_missing_marker(expr: Expr, op: str) -> bool:

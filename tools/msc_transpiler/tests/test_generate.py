@@ -204,6 +204,18 @@ class GenerateTests(unittest.TestCase):
         self.assertIn("string THE_PLAYER", out)        # reset with 0, but it holds what callers pass
         self.assertIn('OnTestEventWithoutNames(string param1 = "", string param2 = "")', out)   # $get(PARAM2,...)
 
+    def test_a_local_used_as_a_number_then_as_text_is_split(self):
+        src = ("{ ev\n local N_NPCS $get_token_amt(G_LIST)\n local N_NPCS $int(N_NPCS)\n if ( N_NPCS >= 0 )\n {\n"
+               " if ( N_NPCS > 1 ) stradd N_NPCS \" remain\"\n if ( N_NPCS == 1 ) local N_NPCS \"Only one\"\n"
+               " if ( N_NPCS == 0 ) local N_NPCS \"None\"\n infomsg all N_NPCS reason\n }\n}")
+        out, _ = convert({"npc/a": src}, "npc/a")
+        text = squash(out)
+        self.assertIn("int nNpcs = GetTokenCount(\"G_LIST\");\nstring nNpcsText = Text(nNpcs);\nif (nNpcs >= 0)", text)
+        self.assertIn('if (nNpcs > 1)\nnNpcsText += " remain";', text)
+        # "Only one" reads as 0 in .script, so the next test is also true: kept visible
+        self.assertIn('if (nNpcs == 1)\n{\nnNpcsText = "Only one";\nnNpcs = 0;\n}', text)
+        self.assertNotIn("Float(", text.split("void OnEv")[1].split("// ----")[0])
+
     def test_nothing_is_written_after_a_return(self):
         from msc_transpiler.emit import emit_method
         from msc_transpiler.ir import Line, Method, Return

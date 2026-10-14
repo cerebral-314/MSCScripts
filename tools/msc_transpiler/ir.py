@@ -20,6 +20,7 @@ class TExpr:
     type: str                 # string, int, float, bool, Vector3
     prec: int = ATOM
     literal: str | None = None   # the value when it is known while converting (for folding)
+    numeric: "TExpr | None" = None  # a split local's number, read wherever a number is wanted (split.py)
 
     def wrapped(self, max_prec: int) -> str:
         return f"({self.code})" if self.prec > max_prec else self.code

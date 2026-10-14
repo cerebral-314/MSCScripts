@@ -83,6 +83,9 @@ def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
 def simplify(stmts: list[Stmt]) -> list[Stmt]:
     out: list[Stmt] = []
     for stmt in _merge_appends(_fold_updates(stmts)):
+        if isinstance(stmt, Line) and stmt.assign is not None and not stmt.declares \
+                and stmt.code == f"{stmt.assign.target} = {stmt.assign.target}":
+            continue        # x = x
         if isinstance(stmt, If):
             stmt.then = simplify(stmt.then)
             if stmt.else_ is not None:

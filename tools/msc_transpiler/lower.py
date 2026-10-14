@@ -26,12 +26,13 @@ from .syntax import Cmd, CmdList, Event, Token
 from .context import FileContext, Signature
 from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, format_number, join, lit, missing_param,
                      negate, number_code, string_literal, truthy)
+from .split import SplitLocals
 from .updates import UpdateCommands, _cmd_source
 
 
 # ----------------------------------------------------------------------------------------
 
-class HandlerLowerer(UpdateCommands):
+class HandlerLowerer(UpdateCommands, SplitLocals):
     def __init__(self, ctx: FileContext, event: Event, signature: Signature | None, method_name: str):
         self.ctx = ctx
         self.event = event
@@ -52,6 +53,7 @@ class HandlerLowerer(UpdateCommands):
         self.aliases: dict[str, str] = {}       # local name -> parameter it only copies
         self._prepare_locals()
         self._analyze_locals()
+        self._find_splits(self._local_evidence_by_name)
 
     # -- locals --------------------------------------------------------------------
 
@@ -87,6 +89,7 @@ class HandlerLowerer(UpdateCommands):
                     visit(e)
 
         visit(self.event.commands)
+        self._local_evidence_by_name = evidence
         taken = {n for n, _ in self.params.values()} | set(self.ctx.fields) | {"result", "self", "host", "menuItem"}
         for name in order:
             ident = names.local(name)
@@ -208,6 +211,10 @@ class HandlerLowerer(UpdateCommands):
         the name itself)."""
         if legacy in self.declared:
             return
+        if legacy in self.splits:
+            self.declared.add(legacy)
+            self._split_declare_early(legacy)
+            return
         ident, t = self.locals[legacy]
         self.declared.add(legacy)
         if legacy in self.ctx.fields:
@@ -225,6 +232,8 @@ class HandlerLowerer(UpdateCommands):
             body = [Line('string result = ""')] + body + [Return("result")]
             body = _collapse_result(body)
         body = [_without_dead_value(d, body) for d in self.top_declarations] + body
+        if self.splits:
+            body = self._split_cleanup(body)
         params = [(t, n) for _, (n, t) in sorted(self.params.items())]
         comments = [self.event.header_comment] if self.event.header_comment else []
         method = Method(self.method_name, params, self.returns, body, comments=comments)
@@ -343,7 +352,9 @@ class HandlerLowerer(UpdateCommands):
             return missing
         if op in ("==", "!=", "<", ">", "<=", ">="):
             lv, rv = self.value(left), self.value(right)
-            t = INT if lv.type in (INT, BOOL) and rv.type in (INT, BOOL) else FLOAT
+            lt = lv.numeric.type if lv.numeric is not None else lv.type
+            rt = rv.numeric.type if rv.numeric is not None else rv.type
+            t = INT if lt in (INT, BOOL) and rt in (INT, BOOL) else FLOAT
             lv, rv = convert(lv, t), convert(rv, t)
             if lv.literal is not None and rv.literal is not None:
                 a, b = c_atof(lv.literal), c_atof(rv.literal)
@@ -446,6 +457,8 @@ class HandlerLowerer(UpdateCommands):
             ident, t = self.locals[text]
             if text not in self.declared:
                 self._declare_early(text)
+            if text in self.splits:
+                return self._split_read(text)
             return TExpr(ident, t)
         index = param_index(text)
         if index:
@@ -475,6 +488,10 @@ class HandlerLowerer(UpdateCommands):
         args = call.args
         if name == "$currentscript":
             return lit(self.ctx.file)
+        if name == "$int" and len(args) == 1:
+            whole = self.value(args[0])
+            if whole.type == INT or (whole.numeric is not None and whole.numeric.type == INT):
+                return convert(whole, INT)          # already a whole number
         if name in ("$get", "$get_by_idx") and len(args) >= 2 and isinstance(args[1], (Name, Literal)):
             return self._get_property(args)
         if name == "$func" and args:
@@ -573,6 +590,13 @@ class HandlerLowerer(UpdateCommands):
 
     def _command(self, cmd: Cmd) -> list[Stmt]:
         name = cmd.name.lower()
+        if cmd.args and cmd.args[0].text in self.splits and name in self.WRITE_COMMANDS \
+                and name not in ("local", "setvar", "setvard"):
+            return self._split_command(cmd, name, lambda: self._command_body(cmd))
+        return self._command_body(cmd)
+
+    def _command_body(self, cmd: Cmd) -> list[Stmt]:
+        name = cmd.name.lower()
         tokens = cmd.args
         args = [parse_token(t.text, t.quoted) for t in tokens]
 
@@ -641,6 +665,12 @@ class HandlerLowerer(UpdateCommands):
                 return [Comment(f"(no effect in .script: an event cannot call itself) callevent {event}")]
             sig = self.ctx.signatures.get(event)
             return [Line(f"{sig.method}({', '.join(self._event_args(sig, args[1:]))})")]
+        first_value = self.value(first)
+        if len(args) > 1 and (first_value.type in (INT, FLOAT) or first_value.numeric is not None):
+            # a number (not negative) starts with a digit: the engine takes it as a delay
+            if len(args) > 2:
+                self.ctx.quirk(cmd.line, "parameters of a delayed callevent are dropped by the engine")
+            return [Line(f"CallEventDelayed({convert(first_value, FLOAT).code}, {self.text(args[1]).code})")]
         # The engine decides at run time: a first argument starting with a digit is a delay
         parts = [self.text(a).code for a in args]
         tail = f", {{ {', '.join(parts[1:])} }}" if parts[1:] else ""
