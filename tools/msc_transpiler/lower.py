@@ -20,16 +20,18 @@ import re
 from . import mapping, names
 from .expr import Call, Expr, Literal, Name, Not, Number, Vector, param_index, parse_token, source_text
 from .infer import BOOL, FLOAT, INT, MATH_COMMANDS, STRING, VECTOR, Evidence, literal_type
-from .ir import ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Comment, For, If, Line, Method, Return, Stmt, TExpr
+from .ir import (ADD, AND, ATOM, COMPARE, EQUALITY, MUL, OR, UNARY, Append, Assign, Comment, For, If, Line, Method,
+                 Return, Stmt, TExpr)
 from .syntax import Cmd, CmdList, Event, Token
 from .context import FileContext, Signature
-from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, format_number, join, lit, negate, number_code,
-                     string_literal, truthy)
+from .values import (FALSE, NUMERIC_TYPES, TRUE, c_atof, c_atoi, convert, format_number, join, lit, missing_param,
+                     negate, number_code, string_literal, truthy)
+from .updates import UpdateCommands, _cmd_source
 
 
 # ----------------------------------------------------------------------------------------
 
-class HandlerLowerer:
+class HandlerLowerer(UpdateCommands):
     def __init__(self, ctx: FileContext, event: Event, signature: Signature | None, method_name: str):
         self.ctx = ctx
         self.event = event
@@ -60,7 +62,8 @@ class HandlerLowerer:
         def visit(cmds: CmdList) -> None:
             for cmd in cmds.cmds:
                 lname = cmd.name.lower()
-                if lname == "local" and cmd.args and not cmd.args[0].text.lower().startswith("reg."):
+                if lname == "local" and cmd.args and not cmd.args[0].text.lower().startswith("reg.") \
+                        and not param_index(cmd.args[0].text):       # `local PARAM2 x` sets the parameter
                     target = cmd.args[0].text
                     if target not in evidence:
                         evidence[target] = Evidence()
@@ -77,6 +80,7 @@ class HandlerLowerer:
                     evidence[cmd.args[0].text].strings += 1
                 elif lname.startswith("vector") and cmd.args and cmd.args[0].text in evidence:
                     evidence[cmd.args[0].text].vectors += 1
+                    evidence[cmd.args[0].text].vector_ops += 1
                 if cmd.if_list:
                     visit(cmd.if_list)
                 for e in cmd.else_lists:
@@ -86,8 +90,11 @@ class HandlerLowerer:
         taken = {n for n, _ in self.params.values()} | set(self.ctx.fields) | {"result", "self", "host", "menuItem"}
         for name in order:
             ident = names.local(name)
-            while ident in taken or ident in names.AS_KEYWORDS:
-                ident += "_"
+            if ident in taken or ident in names.AS_KEYWORDS:
+                base, n = ident + "Value", 2      # minBags (the parameter) and minBagsValue (the local)
+                ident = base
+                while ident in taken:
+                    ident, n = f"{base}{n}", n + 1
             taken.add(ident)
             ev = evidence[name]
             t = ev.resolve({})
@@ -125,6 +132,8 @@ class HandlerLowerer:
 
         visit(self.event.commands, ())
         root = (id(self.event.commands),)
+        changed_params = {param_index(cmd.args[0].text) for cmd in _all_cmds(self.event.commands)
+                          if cmd.args and cmd.name.lower() in self.WRITE_COMMANDS and param_index(cmd.args[0].text)}
         for name, occ in occurrences.items():
             first_cmd, first_path, first_is_write = occ[0]
             value_tokens = first_cmd.args[1:]
@@ -134,7 +143,8 @@ class HandlerLowerer:
             # alias: `local L_X PARAMn` once, at the top, never written again
             if plain_assign and first_path == root and len(writes.get(name, [])) == 1 and len(value_tokens) == 1:
                 index = param_index(value_tokens[0].text)
-                if index and index in self.params and self.params[index][1] == self.locals[name][1]:
+                if index and index in self.params and self.params[index][1] == self.locals[name][1] \
+                        and index not in changed_params:
                     self.aliases[name] = self.params[index][0]
                     continue
             common = _common_prefix([p for _, p, _ in occ])
@@ -204,7 +214,8 @@ class HandlerLowerer:
             init = convert(TExpr(names.variable(legacy), self.ctx.fields[legacy]), t)
         else:
             init = convert(lit(legacy), t)
-        self.top_declarations.append(Line(f"{t} {ident} = {init.code}", declares=True))
+        self.top_declarations.append(Line(f"{t} {ident} = {init.code}", declares=True,
+                                          assign=Assign(ident, t, init, f"{t} ")))
 
     # -- entry -----------------------------------------------------------------------
 
@@ -213,12 +224,12 @@ class HandlerLowerer:
         if self.returns == "string":
             body = [Line('string result = ""')] + body + [Return("result")]
             body = _collapse_result(body)
-        body = self.top_declarations + body
+        body = [_without_dead_value(d, body) for d in self.top_declarations] + body
         params = [(t, n) for _, (n, t) in sorted(self.params.items())]
         comments = [self.event.header_comment] if self.event.header_comment else []
         method = Method(self.method_name, params, self.returns, body, comments=comments)
         if self.params:
-            method.defaults = {n: _default_value(t) for (t, n) in params}
+            method.defaults = {n: missing_param(t, i + 1) for i, (t, n) in enumerate(params)}
         return method
 
     def _exit(self) -> Return:
@@ -229,7 +240,9 @@ class HandlerLowerer:
     def lower_list(self, cmds: CmdList, top: bool = False) -> list[Stmt]:
         out: list[Stmt] = []
         items = cmds.cmds
+        blank = False       # an empty source line before the next statement written
         for i, cmd in enumerate(items):
+            blank = blank or cmd.blank_before
             if cmd.conditional and not cmd.new_style:
                 # Old-style if: when false the rest of this list is skipped
                 cond = self.condition(cmd.args, cmd)
@@ -246,15 +259,19 @@ class HandlerLowerer:
                         out.append(self._exit())
                     return out
                 if top:
-                    out.append(If(negate(cond), [self._exit()], comments=comments, trailing=cmd.comment))
+                    out.append(If(negate(cond), [self._exit()], comments=comments, trailing=cmd.comment, blank=blank))
                     out.extend(self.lower_list(CmdList(items[i + 1:]), top=True))
                 else:
                     self.depth += 1
                     rest = self.lower_list(CmdList(items[i + 1:]))
                     self.depth -= 1
-                    out.append(If(cond, rest, comments=comments, trailing=cmd.comment))
+                    out.append(If(cond, rest, comments=comments, trailing=cmd.comment, blank=blank))
                 return out
-            out.extend(self.lower_command(cmd))
+            stmts = self.lower_command(cmd)
+            if stmts:
+                stmts[0].blank = blank
+                blank = False
+            out.extend(stmts)
         return out
 
     def _nested(self, cmds: CmdList | None) -> list[Stmt]:
@@ -321,6 +338,9 @@ class HandlerLowerer:
         return self.comparison(left, op, right, cmd)
 
     def comparison(self, left: Expr, op: str, right: Expr, cmd: Cmd) -> TExpr:
+        missing = self._missing_test(left, op, right)
+        if missing is not None:
+            return missing
         if op in ("==", "!=", "<", ">", "<=", ">="):
             lv, rv = self.value(left), self.value(right)
             t = INT if lv.type in (INT, BOOL) and rv.type in (INT, BOOL) else FLOAT
@@ -359,6 +379,29 @@ class HandlerLowerer:
             return TRUE if (same if cop == "==" else not same) else FALSE
         return TExpr(f"{lv.wrapped(ADD)} {cop} {rv.wrapped(ADD)}", BOOL, EQUALITY)
 
+    def _missing_test(self, left: Expr, op: str, right: Expr) -> TExpr | None:
+        """`if ( X equals 'PARAM4' )` / `if ( X startswith PARAM )`: .script's test for a parameter the
+        caller did not pass (it reads as its own name). Converted parameters default to "", so the
+        test is whether the value is empty."""
+        if op not in ("equals", "isnot", "!equals", "startswith", "!startswith", "contains", "!contains"):
+            return None
+        for value, marker in ((left, right), (right, left)):
+            text = marker.text if isinstance(marker, (Literal, Name)) else None
+            if text is None or not re.fullmatch(r"PARAM\d*", text):
+                continue
+            if isinstance(marker, Name) and param_index(text) in self.params:
+                continue        # an unquoted PARAMn is the parameter itself
+            if op in ("startswith", "!startswith", "contains", "!contains") and value is right:
+                continue        # `PARAM startswith X` tests something else
+            v = self.value(value)
+            if v.type != STRING:
+                return None
+            empty = TExpr(f"{v.wrapped(ATOM)}.isEmpty()", BOOL)
+            if v.literal is not None:
+                empty = TRUE if v.literal == "" else FALSE
+            return negate(empty) if op in ("isnot", "!equals", "!startswith", "!contains") else empty
+        return None
+
     # -- values ----------------------------------------------------------------------------
 
     def value(self, expr: Expr, want: str | None = None) -> TExpr:
@@ -370,7 +413,8 @@ class HandlerLowerer:
 
     def _value(self, expr: Expr, want: str | None) -> TExpr:
         if isinstance(expr, Literal):
-            return lit(expr.text)
+            # 'PARAM' / 'PARAM4' as a value: the "not supplied" marker, which is empty here
+            return lit("") if _MISSING_MARKER.fullmatch(expr.text) else lit(expr.text)
         if isinstance(expr, Number):
             if want in (STRING, "entity"):
                 return lit(expr.text)
@@ -424,7 +468,7 @@ class HandlerLowerer:
             return TExpr(names.variable(text), self.ctx.fields[text])
         if text in self.ctx.dynamic_vars or text in self.ctx.inference.globals:
             return TExpr(f"GetVar({string_literal(text)})", STRING)
-        return lit(text)
+        return lit("") if text == "PARAM" else lit(text)
 
     def call(self, call: Call) -> TExpr:
         name = call.name.lower()
@@ -450,9 +494,16 @@ class HandlerLowerer:
                 return TExpr(f"{a.wrapped(MUL)} * {b.wrapped(UNARY)}", FLOAT, MUL)
             if op.startswith("div"):
                 return TExpr(f"Divide({a.code}, {b.code})", FLOAT)
-        spec = mapping.FUNCTIONS.get(name)
-        if spec and len(args) >= len(spec.params) and (spec.template or spec.method):
+        spec = mapping.FUNCTIONS.get(f"{name}/{len(args)}") or mapping.FUNCTIONS.get(name)
+        if spec and spec.params == ["Vector3"] and len(args) == 3:
+            # $relpos(0,10,0): three numbers written as one vector
+            x, y, z = (self.value(a, FLOAT).code for a in args)
+            converted = [TExpr(f"Vector3({x}, {y}, {z})", VECTOR)]
+        elif spec and len(args) == len(spec.params):      # never drop an argument
             converted = [self.value(a, p) for a, p in zip(args, spec.params)]
+        else:
+            converted = None
+        if converted is not None and (spec.template or spec.method):
             returns = STRING if spec.returns == "entity" else spec.returns
             if spec.template:
                 code = spec.template
@@ -469,6 +520,10 @@ class HandlerLowerer:
     def _get_property(self, args: list[Expr]) -> TExpr:
         entity = self.text(args[0])
         prop = args[1].text
+        if isinstance(args[1], Name) and (param_index(prop) or prop in self.locals or prop in self.ctx.fields
+                                          or prop in self.ctx.dynamic_vars):
+            tail = "".join(f", {self.text(a).code}" for a in args[2:])
+            return TExpr(f"GetProp({entity.code}, {self.text(args[1]).code}{tail})", STRING)
         lower = prop.lower()
         base, _, component = lower.partition(".")
         if len(args) == 2 and component in mapping.COMPONENTS and base in mapping.GET_VECTOR_COMPONENTS:
@@ -558,171 +613,6 @@ class HandlerLowerer:
         if name.startswith("token.") and tokens:
             return self._token(cmd, name, tokens, args)
         return self._mapped_command(cmd, name, tokens, args)
-
-    # assignments ---------------------------------------------------------------------
-
-    def _concat(self, values: list[Expr]) -> TExpr:
-        """Several value tokens are glued together without spaces; the result is text."""
-        if not values:
-            return lit("")
-        if len(values) == 1:
-            return self.value(values[0])
-        return join([self.value(v) for v in values])
-
-    def _assign_field(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if not tokens:
-            return []
-        target = tokens[0].text
-        index = param_index(target)
-        if index and index in self.params:
-            self.ctx.quirk(cmd.line, f"handler assigns to PARAM{index}")
-            return [Line(f'SetLocal("PARAM{index}", {convert(self._concat(args[1:]), STRING).code})')]
-        if target in self.locals:          # setvard on a local's name updates the local
-            return self._assign_local(cmd, tokens, args)
-        value = self._concat(args[1:])
-        if target in self.ctx.fields and names.is_identifier(target):
-            t = self.ctx.fields[target]
-            return [Line(f"{names.variable(target)} = {convert(value, t).code}")]
-        target_expr = self.text(args[0]) if not names.is_identifier(target) else lit(target)
-        return [Line(f"SetVar({target_expr.code}, {convert(value, STRING).code})")]
-
-    def _assign_local(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if not tokens:
-            return []
-        target = tokens[0].text
-        value = self._concat(args[1:])
-        field_name = target[len("reg.mitem."):] if target.lower().startswith("reg.mitem.") else None
-        if field_name in {"id", "title", "type", "data", "callback", "cb_failed", "priority"}:
-            if not self.menu_item:
-                self.menu_item = True
-                self.top_declarations.append(Line("MenuItem menuItem"))
-            return [Line(f"menuItem.{field_name} = {convert(value, STRING).code}")]
-        if target.lower().startswith("reg.") or target not in self.locals:
-            return [Line(f"SetLocal({string_literal(target)}, {convert(value, STRING).code})")]
-        if target in self.aliases:
-            return []        # the local is just the parameter
-        ident, t = self.locals[target]
-        code = convert(value, t).code
-        if id(cmd) in self.inline_decls and target not in self.declared:
-            self.declared.add(target)
-            return [Line(f"{t} {ident} = {code}", declares=True)]
-        if target not in self.declared:
-            self._declare_early(target)
-        return [Line(f"{ident} = {code}")]
-
-    def _lvalue(self, name: str) -> TExpr | None:
-        if name in self.locals:
-            if name not in self.declared:
-                self._declare_early(name)
-            ident, t = self.locals[name]
-            return TExpr(ident, t)
-        if name in self.ctx.fields and names.is_identifier(name):
-            return TExpr(names.variable(name), self.ctx.fields[name])
-        return None
-
-    def _legacy(self, name: str, target: str, args: list[Expr]) -> list[Stmt]:
-        parts = [string_literal(target)] + [self.text(a).code for a in args]
-        return [Line(f'LegacyCommand("{name}", {{ {", ".join(parts)} }})')]
-
-    def _math(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if not tokens:
-            return []
-        if name == "subract":
-            self.ctx.quirk(cmd.line, "`subract` is not a command; the engine drops this line")
-            return [Comment(f"(no effect in .script: unknown command) subract {' '.join(t.text for t in tokens)}")]
-        target = self._lvalue(tokens[0].text)
-        if target is None:
-            return self._legacy(name, tokens[0].text, args[1:])
-        if name == "capvar":
-            if len(args) < 3:
-                return []
-            # capvar works on floats like the other math commands
-            lo, hi = (self.value(a, FLOAT) for a in args[1:3])
-            current = convert(target, FLOAT)
-            clamped = TExpr(f"Clamp({current.code}, {lo.code}, {hi.code})", FLOAT)
-            return [Line(f"{target.code} = {convert(clamped, target.type).code}")]
-        if len(args) < 2:
-            self.ctx.quirk(cmd.line, f"`{name}` without an amount does nothing")
-            return []
-        op = {"add": "+", "inc": "+", "incvar": "+", "subtract": "-", "dec": "-", "decvar": "-",
-              "multiply": "*", "divide": "/", "mod": "%"}[name]
-        if target.type not in NUMERIC_TYPES:
-            amount = self.value(args[1], FLOAT)
-            if op == "/":
-                expr = f"Divide(Float({target.code}), {amount.code})"
-            elif op == "%":
-                expr = f"Modulo(Float({target.code}), {amount.code})"
-            else:
-                expr = f"Float({target.code}) {op} {amount.wrapped(MUL)}"
-            return [Line(f"{target.code} = Text({expr})")]
-        amount = self.value(args[1], target.type)
-        if op in "+-" and amount.literal is not None and c_atof(amount.literal) == 1 and target.type == INT:
-            return [Line(f"{target.code}{op}{op}")]
-        if op in "+-*":
-            return [Line(f"{target.code} {op}= {amount.code}")]
-        helper = "Divide" if op == "/" else "Modulo"
-        result = TExpr(f"{helper}({target.code}, {amount.code})", FLOAT)
-        return [Line(f"{target.code} = {convert(result, target.type).code}")]
-
-    def _stradd(self, cmd: Cmd, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if len(tokens) < 2:
-            return []
-        target = self._lvalue(tokens[0].text)
-        if target is None:
-            return self._legacy("stradd", tokens[0].text, args[1:])
-        if len(args) >= 3:
-            value = join([self.value(args[1]), self.value(args[2])])
-            return [Line(f"{target.code} = {convert(value, target.type).code}")]
-        value = self.value(args[1])
-        if target.type == STRING:
-            return [Append(target.code, value)]
-        return [Line(f"{target.code} = {convert(join([convert(target, STRING), value]), target.type).code}")]
-
-    def _strconc(self, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if not tokens:
-            return []
-        target = self._lvalue(tokens[0].text)
-        if target is None or len(args) < 2:
-            return self._legacy("strconc", tokens[0].text, args[1:]) if target is None else []
-        words = join([self.value(a) for a in args[1:]], " ")
-        value = join([convert(target, STRING), words])
-        return [Line(f"{target.code} = {convert(value, target.type).code}")]
-
-    def _vector(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        if len(tokens) < 2:
-            return []
-        target = self._lvalue(tokens[0].text)
-        if target is None or target.type != VECTOR:
-            return self._legacy(name, tokens[0].text, args[1:])
-        axis = tokens[1].text.lower()
-        if axis in ("x", "y", "z") and len(args) >= 3:
-            amount = self.value(args[2], FLOAT)
-            op = {"vectoradd": "+=", "vectorset": "=", "vectormultiply": "*=", "vectorscale": "*="}[name]
-            return [Line(f"{target.code}.{axis} {op} {amount.code}")]
-        if name == "vectoradd":
-            if len(args) >= 3:
-                return [Line(f"{target.code} = {self.value(args[1], VECTOR).wrapped(ADD)} + {self.value(args[2], VECTOR).wrapped(ADD)}")]
-            return [Line(f"{target.code} += {self.value(args[1], VECTOR).code}")]
-        if name in ("vectormultiply", "vectorscale"):
-            scalar = args[1]
-            factor = self.value(scalar)
-            if factor.type == VECTOR:
-                return [Line(f"{target.code} = Scale({target.code}, {factor.code})")]
-            if isinstance(scalar, Number) and scalar.text.startswith("-"):
-                self.ctx.quirk(cmd.line, "vectormultiply with a negative scalar sets the vector to (0,0,0)")
-            return [Line(f"{target.code} *= {convert(factor, FLOAT).code}")]
-        return self._legacy(name, tokens[0].text, args[1:])
-
-    def _token(self, cmd: Cmd, name: str, tokens: list[Token], args: list[Expr]) -> list[Stmt]:
-        target = self._lvalue(tokens[0].text)
-        helper = {"token.add": "TokenAdd", "token.del": "TokenRemove", "token.set": "TokenSet",
-                  "token.scramble": "TokenShuffle"}.get(name)
-        needed = {"TokenAdd": 1, "TokenRemove": 1, "TokenSet": 2, "TokenShuffle": 0}.get(helper or "", 0)
-        if target is None or helper is None or target.type != STRING or len(args) - 1 < needed:
-            return self._legacy(name, tokens[0].text, args[1:])
-        extra = [self.value(a, INT if (helper in ("TokenRemove", "TokenSet") and i == 0) else STRING).code
-                 for i, a in enumerate(args[1:])]
-        return [Line(f"{target.code} = {helper}({', '.join([target.code] + extra)})")]
 
     # events --------------------------------------------------------------------------------
 
@@ -833,6 +723,68 @@ class HandlerLowerer:
         return f"{spec.method}({', '.join(out)})"
 
 
+def _without_dead_value(decl: Line, body: list[Stmt]) -> Line:
+    """`string mode = "MODE";` declared at the top when every path assigns `mode` before reading it:
+    the starting value is never seen, so the declaration does not give one."""
+    if decl.assign is None:
+        return decl
+    ident = decl.assign.target
+    word = re.compile(rf"\b{re.escape(ident)}\b")
+    for stmt in body:
+        if _mentions(stmt, word):
+            if _assigns_first(stmt, ident, word):
+                return Line(f"{decl.assign.type} {ident}", declares=True, comments=decl.comments)
+            return decl
+    return decl
+
+
+def _mentions(stmt: Stmt, word) -> bool:
+    if isinstance(stmt, Line):
+        return bool(word.search(stmt.code))
+    if isinstance(stmt, Append):
+        return stmt.target == word.pattern or bool(word.search(stmt.target + " " + stmt.value.code))
+    if isinstance(stmt, Return):
+        return bool(stmt.value and word.search(stmt.value))
+    if isinstance(stmt, If):
+        return bool(word.search(stmt.cond.code)) or any(_mentions(s, word) for s in stmt.then + (stmt.else_ or []))
+    if isinstance(stmt, For):
+        return bool(word.search(stmt.header)) or any(_mentions(s, word) for s in stmt.body)
+    return False
+
+
+def _assigns_first(stmt: Stmt, ident: str, word) -> bool:
+    """`stmt` sets `ident` on every path before anything reads it."""
+    if isinstance(stmt, Line):
+        lhs, sep, rhs = stmt.code.partition(" = ")
+        return bool(sep) and lhs == ident and not word.search(rhs)
+    if isinstance(stmt, If):
+        if word.search(stmt.cond.code) or not stmt.else_:
+            return False
+        return all(_branch_assigns_first(b, ident, word) for b in (stmt.then, stmt.else_))
+    return False
+
+
+def _branch_assigns_first(stmts: list[Stmt], ident: str, word) -> bool:
+    for stmt in stmts:
+        if _mentions(stmt, word):
+            return _assigns_first(stmt, ident, word)
+        if isinstance(stmt, Return):
+            return True         # leaves before reading it
+    return False
+
+
+_MISSING_MARKER = re.compile(r"PARAM\d*")
+
+
+def _all_cmds(cmds: CmdList):
+    for cmd in cmds.cmds:
+        yield cmd
+        if cmd.if_list:
+            yield from _all_cmds(cmd.if_list)
+        for e in cmd.else_lists:
+            yield from _all_cmds(e)
+
+
 def _walk(expr: Expr):
     yield expr
     if isinstance(expr, Call):
@@ -853,15 +805,6 @@ def _common_prefix(paths: list[tuple[int, ...]]) -> tuple[int, ...]:
             n += 1
         prefix = prefix[:n]
     return prefix
-
-
-def _cmd_source(cmd: Cmd) -> str:
-    words = " ".join(t.text if not t.quoted else f'"{t.text}"' for t in cmd.args)
-    return f"{cmd.name} {words}".strip()
-
-
-def _default_value(t: str) -> str:
-    return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
 
 
 def _collapse_result(body: list[Stmt]) -> list[Stmt]:

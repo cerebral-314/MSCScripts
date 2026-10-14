@@ -72,10 +72,14 @@ def functions_file() -> str:
             continue
         params = [(t, f"arg{i + 1}") for i, t in enumerate(spec.params)]
         decl = ", ".join(f"{_param_type(t)} {n}" for t, n in params)
-        args = ", ".join(_as_text(t, n) for t, n in params)
-        call = f'host.Function("{name[1:]}"{", { " + args + " }" if args else ""})'
+        if spec.components:
+            args = ", ".join(f"Text({params[0][1]}.{axis})" for axis in "xyz")
+        else:
+            args = ", ".join(_as_text(t, n) for t, n in params)
+        engine_name = name.split("/")[0]      # "$relpos/2": the two-argument form of $relpos
+        call = f'host.Function("{engine_name[1:]}"{", { " + args + " }" if args else ""})'
         lines.append("")
-        lines.append(f"\t// {name}{' - ' + spec.doc if spec.doc else ''}")
+        lines.append(f"\t// {engine_name}{' - ' + spec.doc if spec.doc else ''}")
         lines.append(f"\t{_ret_type(spec.returns)} {spec.method}({decl})")
         lines.append("\t{")
         lines.append(f"\t\treturn {_from_text(spec.returns, call)};")

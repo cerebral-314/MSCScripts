@@ -1,5 +1,6 @@
 """End-to-end conversion of small scripts: structure, semantics and readability of the output."""
 
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,8 +26,20 @@ def squash(text: str) -> str:
 
 class GenerateTests(unittest.TestCase):
     def test_top_level_guard_becomes_early_return(self):
-        out, _ = convert({"npc/a": "{ game_spawn\n if PARAM1 equals x\n hp 5\n}"}, "npc/a")
+        out, _ = convert({"npc/a": "{ test_event_without_names\n if PARAM1 equals x\n hp 5\n}"}, "npc/a")
         self.assertIn('if (param1 != "x")\nreturn;\nSetHealth(5.0f);', squash(out))
+
+    def test_writing_a_parameter_changes_the_parameter(self):
+        out, _ = convert({"npc/a": "{ test_event_without_names\n local L_ORIG PARAM1\n multiply PARAM1 0.5\n"
+                                   " hp PARAM1\n gold L_ORIG\n $get(ent_me,PARAM2)\n saytext $get(ent_me,PARAM2)\n}"},
+                         "npc/a")
+        text = squash(out)
+        m = re.search(r"void OnTestEventWithoutNames\(float (\w+) = 0\.0f", text)
+        first = m.group(1)
+        self.assertIn(f"{first} *= 0.5f;", text)
+        self.assertNotIn('LegacyCommand("multiply"', text)
+        self.assertRegex(text, rf"float \w+ = {first};")     # the copy is a real local: PARAM1 changes later
+        self.assertIn("GetProp(ENT_ME, param2)", text)       # the property named by PARAM2's value
 
     def test_nested_guard_wraps_the_rest_of_its_block(self):
         out, _ = convert({"npc/a": "{ ev\n if ( A_SET )\n {\n if B_SET\n hp 5\n }\n gold 1\n}\n"
@@ -52,7 +65,7 @@ class GenerateTests(unittest.TestCase):
 
     def test_stradd_builds_one_string(self):
         out, _ = convert({"npc/a": '{ ev\n local L_T "a"\n stradd L_T PARAM1\n saytext L_T\n}'}, "npc/a")
-        self.assertIn('string t = "a";\nt += param1;\nSayText(t);', squash(out))
+        self.assertIn('string t = "a" + param1;\nSayText(t);', squash(out))
 
     def test_return_clear_typo_is_reported_and_kept(self):
         out, project = convert({"npc/a": "{ f\n return **clear**\n return 5\n}\n{ ev\n local X $func(f)\n}"}, "npc/a")
@@ -106,8 +119,83 @@ class GenerateTests(unittest.TestCase):
     def test_capvar_clamps_as_floats(self):
         out, _ = convert({"npc/a": "{\n const TURN 4\n}\n{ ev\n local L_YAW $neg(TURN)\n capvar L_YAW $neg(TURN) TURN\n"
                                    " local L_N 2\n capvar L_N 1 3\n setvard COUNT L_N\n}"}, "npc/a")
-        self.assertIn("Clamp(yaw, -TURN, TURN)", out)    # one float overload: no int truncation to choose
+        self.assertIn("float yaw = Clamp(-TURN, -TURN, TURN);", out)   # one float overload: nothing truncated
         self.assertNotIn("int Clamp", out)
+
+    def test_blank_lines_of_the_source_are_kept(self):
+        out, _ = convert({"npc/a": "{ ev\n hp 1\n gold 2\n\n // then\n name x\n}"}, "npc/a")
+        self.assertIn('\t\tSetGold(2);\n\n\t\t// then\n\t\tSetName("x");', out)
+
+    def test_step_by_step_updates_become_one_expression(self):
+        out, _ = convert({"npc/a": "{ ev\n setvard STEP 359\n divide STEP PARAM1\n local L_D 10\n add L_D PARAM2\n"
+                                   " multiply L_D 2\n hp L_D\n}\n{ x\n hp STEP\n}"}, "npc/a")
+        text = squash(out)
+        self.assertIn("void OnEv(float param1 = 0.0f, float param2 = 0.0f)", text)   # typed by the math they feed
+        self.assertIn("STEP = Divide(359.0f, param1);", text)
+        self.assertIn("float d = (10.0f + param2) * 2.0f;", text)
+
+    def test_a_variable_set_only_by_math_is_a_field(self):
+        out, _ = convert({"npc/a": "{ ev\n add COUNT 1\n local L_N COUNT\n if ( COUNT > 1 ) hp 1\n saytext L_N\n}"},
+                         "npc/a")
+        self.assertIn("COUNT += 1.0f;", out)
+        self.assertIn("if (COUNT > 1", out)
+        self.assertNotIn('"COUNT"', out.split("void OnEv")[1])
+
+    def test_vector_commands_on_a_text_variable_convert_it(self):
+        out, _ = convert({"npc/a": "{ ev\n local L_P PARAM1\n vectoradd L_P $relpos(0,10,0)\n setvard POS L_P\n"
+                                   " setvard POS none\n}"}, "npc/a")
+        self.assertNotIn("LegacyCommand", out)
+        self.assertIn("Vec(", out)
+
+    def test_vectormultiply_on_one_axis_keeps_only_that_axis(self):
+        out, project = convert({"npc/a": "{ ev\n local L_V $relpos(1,2,3)\n vectormultiply L_V x 2\n setvard V L_V\n}"},
+                               "npc/a")
+        self.assertIn("Scale(", out)
+        self.assertIn("Vector3(2.0f, 0.0f, 0.0f)", out)
+        self.assertTrue(any("keeps only the x component" in q.message for q in project.quirks))
+
+    def test_a_local_set_on_every_path_needs_no_starting_value(self):
+        out, _ = convert({"npc/a": "{ ev\n if ( PARAM1 equals a )\n {\n local L_M 1\n }\n else\n {\n local L_M 2\n }\n"
+                                   " saytext L_M\n local L_N 5\n if ( PARAM2 equals b ) local L_N 6\n saytext L_N\n}"}, "npc/a")
+        self.assertRegex(out, r"\n\t\t(int|float|string) m;\n")        # both branches set it
+        self.assertNotRegex(out, r"\b(int|float|string) n;")           # one branch only: keeps its value
+
+    def test_a_test_for_an_omitted_parameter_is_an_emptiness_test(self):
+        out, _ = convert({"npc/a": "{ ev\n local L_MIN PARAM2\n if ( L_MIN equals 'PARAM2' ) local L_MIN 1\n"
+                                   " if ( PARAM3 startswith PARAM ) hp 2\n if PARAM4 isnot 'PARAM4'\n hp 3\n"
+                                   " saytext L_MIN\n}"}, "npc/a")
+        self.assertNotIn('"PARAM', out)                 # no "PARAM2" defaults or comparisons
+        text = squash(out)
+        self.assertIn(".isEmpty())", text)
+        self.assertRegex(text, r"if \(\w+\.isEmpty\(\)\)\n\w+ = \"1\";")
+        self.assertRegex(text, r"if \(\w+\.isEmpty\(\)\)\nreturn;")    # isnot 'PARAM4' guard
+
+    def test_relpos_forms(self):
+        out, _ = convert({"npc/a": "{ ev\n local L_A $relpos(0,10,0)\n local L_B $relpos($vec(0,PARAM1,0),$vec(0,5,40))\n"
+                                   " setvard A L_A\n setvard B L_B\n}"}, "npc/a")
+        self.assertIn("RelativePosition(Vector3(0.0f, 10.0f, 0.0f))", out)
+        # the offset of the two-vector form is kept; PARAM1 is a float because $vec takes numbers
+        self.assertIn("RelativePosition(Vector3(0.0f, param1, 0.0f), Vector3(0.0f, 5.0f, 40.0f))", out)
+
+    def test_parameter_types_follow_their_uses(self):
+        files = {"npc/a": "{ ev\n setvard SPEED PARAM1\n local L_N PARAM2\n add L_N 1\n if ( PARAM3 > 5 ) hp 1\n"
+                          " local L_P PARAM4\n vectoradd L_P $relpos(0,1,0)\n setvard POS L_P\n saytext PARAM5\n}\n"
+                          "{ x\n add SPEED 2\n callevent ev 1 2 3 (0,0,0) hello\n}"}
+        out, _ = convert(files, "npc/a")
+        self.assertRegex(out, r"void OnEv\(float \w+ = 0\.0f, float \w+ = 0\.0f, (int \w+ = 0|float \w+ = 0\.0f), "
+                              r"Vector3 \w+ = Vector3\(\), string \w+ = \"\"\)")
+
+    def test_local_named_like_a_parameter_sets_the_parameter(self):
+        out, _ = convert({"npc/a": "{ test_event_without_names\n if ( PARAM2 equals 'PARAM2' ) local PARAM2 5\n"
+                                   " saytext PARAM2\n}"}, "npc/a")
+        self.assertNotIn('"PARAM2"', out)
+        self.assertRegex(squash(out), r"if \((\w+)\.isEmpty\(\)\)\n\1 = \"5\";\nSayText\(\1\);")
+
+    def test_a_parameter_tested_for_omission_stays_text(self):
+        out, _ = convert({"npc/a": "{ test_event_without_names\n if ( PARAM1 !startswith PARAM )\n {\n setvard SIZE PARAM1\n"
+                                   " }\n}\n{ x\n add SIZE 1\n callevent test_event_without_names 15\n}"}, "npc/a")
+        self.assertIn('OnTestEventWithoutNames(string param1 = "")', out)
+        self.assertIn("if (!param1.isEmpty())", out)
 
     def test_nothing_is_written_after_a_return(self):
         from msc_transpiler.emit import emit_method

@@ -148,6 +148,12 @@ def negate(e: TExpr) -> TExpr:
     return TExpr(f"!{e.wrapped(UNARY)}", BOOL, UNARY)
 
 
+def missing_param(t: str, index: int) -> str:
+    """The default of a parameter the caller did not pass. (In .script it reads as its own name,
+    "PARAM4"; scripts test that with `equals 'PARAM4'`, which converts to an emptiness test.)"""
+    return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
+
+
 def join(parts: list[TExpr], separator: str = "") -> TExpr:
     """String concatenation; literals known now are merged, separators included."""
     merged: list[TExpr] = []

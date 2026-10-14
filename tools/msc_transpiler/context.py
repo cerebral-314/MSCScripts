@@ -3,9 +3,22 @@ event signatures, and the quirks found while converting it."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from . import mapping, names
+
+# Reviewed parameter names: event -> {"1": "goldPerBag", ...}. Engine events are named in mapping.py;
+# the rest were proposed from each parameter's comments and uses, and can be edited by hand.
+PARAM_NAMES = Path(__file__).parent / "data" / "param_names.json"
+
+
+def _load_param_names() -> dict[str, dict[str, str]]:
+    try:
+        return json.loads(PARAM_NAMES.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
 from .infer import BOOL, INT, STRING, Evidence, Inference
 
 
@@ -50,10 +63,12 @@ class SignatureTable:
     def __init__(self, inference: Inference, events: list[str] | None = None):
         self.inference = inference
         self._cache: dict[str, Signature] = {}
+        self._names = _load_param_names()
         # Method names must be unique per event name; assign them once, in a fixed order
         self._methods: dict[str, str] = {}
         taken: dict[str, str] = {}
-        for event in sorted(set(events or [])):
+        # engine events first, so a typo'd copy (game_dynamically_Created) never takes their name
+        for event in sorted(set(events or []), key=lambda e: (e not in mapping.ENGINE_EVENTS, e)):
             self._methods[event] = self._unique(event, taken)
         self._taken = taken
 
@@ -88,11 +103,16 @@ class SignatureTable:
                 pname = p.name
                 named_by_engine = True
             else:
-                type_ = self.inference.params.get((event, index), Evidence()).resolve({})
+                type_ = self.inference.param_type(event, index)
                 if type_ == BOOL:
                     type_ = INT
+            chosen = self._names.get(event, {}).get(str(index), "")
             counts = self.inference.param_names.get((event, index)) or self.inference.param_doc_names.get((event, index))
-            if counts and not named_by_engine:
+            if named_by_engine:
+                pass
+            elif names.is_identifier(chosen) and chosen[0].islower():
+                pname = chosen
+            elif counts:
                 best = max(counts.items(), key=lambda kv: kv[1])[0]
                 pname = names.local(best)
             while pname in used or pname in names.AS_KEYWORDS:

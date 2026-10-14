@@ -29,6 +29,7 @@ class Cmd:
     else_lists: list[CmdList] = field(default_factory=list)
     comment: str = ""             # trailing comment on the same source line
     leading_comments: list[str] = field(default_factory=list)
+    blank_before: bool = False    # an empty source line separates it from the command before
 
 
 @dataclass

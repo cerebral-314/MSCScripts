@@ -1,13 +1,68 @@
 """Printing statement trees as AngelScript, with the readability rewrites that are safe
-on any tree: else-if chains, merging an if that only wraps another if, and braceless
-single-statement bodies.
+on any tree: else-if chains, merging an if that only wraps another if, braceless
+single-statement bodies, the source's blank lines, and step-by-step updates of one
+variable folded into the assignment before them (.script has no expressions, so
+`setvard X 359` + `divide X N` is how it writes `X = 359 / N`).
 """
 
 from __future__ import annotations
 
-from .ir import AND, Append, Blank, Comment, For, If, Line, Method, Return, Stmt, TExpr
+import re
+
+from .ir import AND, Append, Assign, Blank, Comment, For, If, Line, Method, Return, Stmt, TExpr
 
 INDENT = "\t"
+
+
+MAX_FOLDED_LINE = 100      # a fold that would make the line longer than this is left as two lines
+
+# Value conversions that keep every value (a fold may skip them); others stay as two lines
+_LOSSLESS = {("int", "float"), ("bool", "int"), ("bool", "float"), ("int", "string"), ("bool", "string")}
+# calls whose order relative to another such call matters
+_EFFECTS = re.compile(r"\b(?:Random\w*|CallFunction|LegacyFunction|LegacyCommand|On[A-Z]\w*)\(")
+# calls that may read a script variable by name while the line runs
+_READS_VARS = re.compile(r"\b(?:GetVar|GetProp|Eval|CallFunction|LegacyFunction|On[A-Z]\w*)\(")
+
+
+def _fold_updates(stmts: list[Stmt]) -> list[Stmt]:
+    out: list[Stmt] = []
+    for stmt in stmts:
+        folded = _fold(out[-1], stmt) if out else None
+        if folded is not None:
+            out[-1] = folded
+        else:
+            out.append(stmt)
+    return out
+
+
+def _fold(prev: Stmt, stmt: Stmt) -> Line | None:
+    """`x = a;` followed by `x = f(x);` (or `x += b`) -> `x = f(a);`."""
+    from .values import convert, join
+    # (a blank line between them is dropped: the second line only finishes the value)
+    if not isinstance(prev, Line) or prev.assign is None or stmt.comments:
+        return None
+    if prev.trailing and stmt.trailing:
+        return None
+    a = prev.assign
+    if a.value.type != a.type and (a.value.type, a.type) not in _LOSSLESS:
+        return None
+    if isinstance(stmt, Append) and stmt.target == a.target and a.type == "string":
+        value, reads = join([a.value, stmt.value]), stmt.value.code
+    elif isinstance(stmt, Line) and stmt.update is not None and stmt.update.target == a.target:
+        value, reads = stmt.update.apply(a.value), stmt.update.reads
+    else:
+        return None
+    if re.search(rf"\b{re.escape(a.target)}\b", reads):
+        return None         # the other operands read the variable itself
+    if _EFFECTS.search(a.value.code) and _EFFECTS.search(reads):
+        return None         # both sides call something: keep their order visible
+    if a.field and _READS_VARS.search(reads):
+        return None         # the other operands might read the variable by name before it is set
+    code = f"{a.prefix}{a.target} = {convert(value, a.type).code}"
+    if len(code) > MAX_FOLDED_LINE:
+        return None
+    return Line(code, declares=prev.declares, assign=Assign(a.target, a.type, value, a.prefix, a.field),
+                comments=prev.comments, trailing=prev.trailing or stmt.trailing, blank=prev.blank)
 
 
 def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
@@ -15,9 +70,11 @@ def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
     out: list[Stmt] = []
     for stmt in stmts:
         prev = out[-1] if out else None
-        if isinstance(stmt, Append) and isinstance(prev, Append) and prev.target == stmt.target                 and not stmt.comments and not prev.trailing:
+        if isinstance(stmt, Append) and isinstance(prev, Append) and prev.target == stmt.target \
+                and not stmt.comments and not stmt.blank and not prev.trailing:
             first = prev.value if prev.value.type == "string" else join([prev.value])
-            out[-1] = Append(prev.target, join([first, stmt.value]), comments=prev.comments, trailing=stmt.trailing)
+            out[-1] = Append(prev.target, join([first, stmt.value]), comments=prev.comments, trailing=stmt.trailing,
+                             blank=prev.blank)
         else:
             out.append(stmt)
     return out
@@ -25,7 +82,7 @@ def _merge_appends(stmts: list[Stmt]) -> list[Stmt]:
 
 def simplify(stmts: list[Stmt]) -> list[Stmt]:
     out: list[Stmt] = []
-    for stmt in _merge_appends(stmts):
+    for stmt in _merge_appends(_fold_updates(stmts)):
         if isinstance(stmt, If):
             stmt.then = simplify(stmt.then)
             if stmt.else_ is not None:
@@ -37,7 +94,8 @@ def simplify(stmts: list[Stmt]) -> list[Stmt]:
                 stmt.cond = TExpr(f"{stmt.cond.wrapped(AND)} && {inner.cond.wrapped(AND)}", "bool", AND)
                 stmt.then = inner.then
             if not stmt.then and stmt.else_ is None:
-                out.append(Line(f"if ({stmt.cond.code}) {{}}", comments=stmt.comments, trailing=stmt.trailing))
+                out.append(Line(f"if ({stmt.cond.code}) {{}}", comments=stmt.comments, trailing=stmt.trailing,
+                                blank=stmt.blank))
                 continue
         elif isinstance(stmt, For):
             stmt.body = simplify(stmt.body)
@@ -65,6 +123,8 @@ def emit_block(stmts: list[Stmt], depth: int) -> list[str]:
     lines: list[str] = []
     indent = INDENT * depth
     for stmt in stmts:
+        if stmt.blank and lines:
+            lines.append("")
         lines.extend(_comment_lines(stmt.comments, indent))
         if isinstance(stmt, Append):
             # string += accepts numbers directly; bools and vectors need .script's text form
@@ -150,7 +210,7 @@ def emit_method(method: Method, depth: int = 1) -> list[str]:
 
 
 def _param_decl(type_: str) -> str:
-    return "const string &in" if type_ == "string" else ("const Vector3 &in" if type_ == "Vector3" else type_)
+    return type_        # by value: `string target`, `Vector3 position` (a type with qualifiers is kept as written)
 
 
 def emit_methods(lines: list[str], methods: list[Method]) -> None:

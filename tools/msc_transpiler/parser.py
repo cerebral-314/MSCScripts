@@ -80,6 +80,7 @@ class Parser:
         self.cmds: CmdList | None = None
         self.parents: list[CmdList] = []
         self.pending_comments: list[str] = []
+        self.pending_blank = False      # an empty line since the last command
         self.line_comment = ""
         self.line_number = 0
         self.first_cmd_on_line: Cmd | None = None
@@ -94,6 +95,8 @@ class Parser:
             if not line.code:
                 if line.comment:
                     self._comment_only(line.comment)
+                elif not line.raw.strip():
+                    self.pending_blank = True
                 continue
             items_before = len(self.file.items)
             loads_before = len(self.event.load_ops) if self.event else 0
@@ -102,6 +105,8 @@ class Parser:
                         or (self.event is not None and len(self.event.load_ops) != loads_before))
             if line.comment and not consumed:
                 self.pending_comments.append(line.comment)
+            if self.first_cmd_on_line is None:
+                self.pending_blank = False     # braces and load-time lines end a paragraph too
         if self.event is not None:
             self.problem("event is not closed with }")
         if self.pending_comments and self.event is None and self.file.items:
@@ -327,6 +332,7 @@ class Parser:
             self.first_cmd_on_line = cmd
             cmd.comment = self.line_comment
             cmd.leading_comments = self._take_comments()
+            cmd.blank_before, self.pending_blank = self.pending_blank, False
         self.cmds.cmds.append(cmd)
         return cmd
 

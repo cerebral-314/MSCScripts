@@ -41,6 +41,9 @@ modules of one process alive, as the game does, so the shared classes are compil
 | A file nothing includes | `[script "monsters/orc_flayer"] class OrcFlayer : OrcBaseScript, …` |
 | `{ game_spawn … }` | `void OnGameSpawn()` calling every included file's handler in the engine's order, then its own body |
 | `const X 5` / `setvard X 1` | field `int X = 5;` / `X = 1;` — names stay as in .script |
+| `setvard STEP 359` then `divide STEP N` | `STEP = Divide(359.0f, N);` — step-by-step updates folded into one expression |
+| `add COUNT 1` on a name nothing else sets | field `COUNT`, `COUNT += 1.0f;` (math commands store a script variable) |
+| blank lines between commands | kept, so the source's grouping survives |
 | `local L_ITEM PARAM2` | parameter or local `item` (camelCase, `L_` dropped) |
 | `if ( A equals B )` / `else if` | `if (A == B)` / `else if` |
 | `if X` (no parentheses) | early `return` at the top of a handler, otherwise wraps the rest of its block |
@@ -89,6 +92,7 @@ ASCII as `\xHH`, which AngelScript stores as that exact byte.
 | `loader.py` | Port of `CScript::Spawn` for one script: include order, `#scope` leaks, `[override]`, first-wins `const` |
 | `infer.py` | Picks a type per variable (int/float/bool/string/Vector3) from how the whole corpus uses it |
 | `lower.py`, `ir.py`, `emit.py` | One handler → one method, with `Script_ExecuteCmds` control flow and readable output |
+| `updates.py` | Commands that set a variable (assignments, math, text, vector, token) |
 | `values.py`, `context.py` | Typed values and the interpreter's implicit conversions; per-file context and event signatures |
 | `generate.py` | Files → mixins, fields, handlers, load-time work |
 | `entity.py` | Each file's `[script]` class: its base class, mixins, inherited fields and constructor |
@@ -106,8 +110,14 @@ generated wrapper files. All of it is `shared`, because the libraries' shared cl
 * Add a command, `$function` or `$get` property to `mapping.py`, run `runtime`, then `convert` again.
   Unmapped ones stay correct as `LegacyCommand(...)` / `LegacyFunction(...)`.
 * Add an engine event to `mapping.ENGINE_EVENTS` to give its parameters names and types.
-* Parameter names otherwise come from `local L_NAME PARAMn` lines or from event header comments
-  (`{ give_item //PARAM1 = PlayerID PARAM2 = ItemID`).
+* Every other event's parameter names are in `data/param_names.json` (`{"gold_spew": {"1": "goldPerBag", …}}`).
+  They were written by a language model from each parameter's comments, the lines that use it and the
+  calls that pass it, then reviewed for names that contradicted those uses. Edit the file by hand to
+  rename a parameter; a name missing there falls back to the `local L_NAME PARAMn` copies or the
+  event's header comment (`{ give_item //PARAM1 = PlayerID PARAM2 = ItemID`).
+* A parameter the caller did not pass reads as its own name in .script (`"PARAM4"`), which scripts
+  test with `if ( X equals 'PARAM4' )` or `if ( X startswith PARAM )`. Converted parameters default to
+  `""` instead, and those tests become `if (x.isEmpty())`.
 
 ## Legacy quirks
 

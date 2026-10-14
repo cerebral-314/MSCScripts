@@ -24,7 +24,7 @@ from . import mapping
 from .corpus import normalize
 from .infer import BOOL, FLOAT, INT, STRING, VECTOR
 from .ir import If, Line, Method, Return, Stmt, TExpr
-from .values import convert, string_literal
+from .values import convert, missing_param, string_literal
 
 
 @dataclass
@@ -183,7 +183,7 @@ class EventWiring:
             body = [Line(f"{m}({args})", trailing=_origin(files.get(m, ""), owner_name)) for m in calls]
         method = Method(sig.method, list(sig.params), sig.returns, body)
         if sig.params:
-            method.defaults = {n: _default(t) for t, n in sig.params}
+            method.defaults = {n: missing_param(t, i + 1) for i, (t, n) in enumerate(sig.params)}
         spec = mapping.ENGINE_EVENTS.get(event)
         method.comments = [event + (f" - {spec.doc}" if spec and spec.doc else "")]
         if inline is not None:
@@ -203,7 +203,7 @@ class EventWiring:
         body = self._dispatch_lines(events, timers)
         body.append(Return("false"))
         return Method(f"{self.project.class_of(name)}_DispatchEvent",
-                      [("string", "name"), ("const array<string> &in", "params")], "bool", body,
+                      [("const string &in", "name"), ("const array<string> &in", "params")], "bool", body,
                       comments=["This file's events and timers by their .script names"])
 
     def entity_dispatch(self, name: str) -> Method | None:
@@ -232,7 +232,7 @@ class EventWiring:
         if base:
             calls.append(f"{p.entity_class_of(base)}::DispatchEvent(name, params)")
         body.append(Return("\n\t\t\t|| ".join(calls) if calls else "false"))
-        return Method("DispatchEvent", [("string", "name"), ("const array<string> &in", "params")], "bool", body,
+        return Method("DispatchEvent", [("const string &in", "name"), ("const array<string> &in", "params")], "bool", body,
                       comments=["Events and timers by their .script names (engine, callexternal, timers):",
                                 "this script's own, then each included file's.",
                                 "Variables are reached by their .script names directly (the fields keep those names)."],
@@ -254,10 +254,6 @@ class EventWiring:
 
 def _origin(file: str, owner: str) -> str:
     return file if file and file.lower() != owner else ""
-
-
-def _default(t: str) -> str:
-    return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
 
 
 def _param_from_array(t: str, i: int) -> str:

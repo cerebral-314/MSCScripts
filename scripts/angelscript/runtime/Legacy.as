@@ -154,9 +154,10 @@ shared string TokenShuffle(const string &in list)
 
 // ---- Event plumbing -------------------------------------------------------------------------
 
-// Parameter <index> of an event, "" when the caller passed fewer
+// Parameter <index> of an event (counting from 0)
 shared string Param(const array<string> &in params, uint index)
 {
+	// a parameter the caller did not pass is empty (scripts test that with isEmpty())
 	return index < params.length() ? params[index] : "";
 }
 
@@ -165,6 +166,11 @@ shared string AppendResult(const string &in result, const string &in value)
 {
 	return result.isEmpty() ? value : result + ";" + value;
 }
+
+// vectorset <var> x|y|z <value> on a variable that holds vector text
+shared Vector3 WithX(const Vector3 &in value, float x) { return Vector3(x, value.y, value.z); }
+shared Vector3 WithY(const Vector3 &in value, float y) { return Vector3(value.x, y, value.z); }
+shared Vector3 WithZ(const Vector3 &in value, float z) { return Vector3(value.x, value.y, z); }
 
 // vectormultiply <var> <vector>: multiplies component by component
 shared Vector3 Scale(const Vector3 &in value, const Vector3 &in factors)

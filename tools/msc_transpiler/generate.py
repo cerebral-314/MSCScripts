@@ -141,9 +141,14 @@ class Project(EntityClasses):
                             info.declared_const.add(op.name)
                 for cmd in _all_commands(item.commands):
                     lower = cmd.name.lower()
-                    if lower == "setvar" and cmd.args:
+                    # setvar, and math / text / vector / token commands, store a script variable
+                    # (ScriptCmd_MathSet etc. end in SetVar): those are fields too. A global of the
+                    # same name stays a lookup, since the command reads the global's value first.
+                    writes = lower in HandlerLowerer.WRITE_COMMANDS - {"local", "subract"}
+                    if writes and cmd.args:
                         target = cmd.args[0].text
-                        if names.is_identifier(target) and not param_index(target) and target not in local_names:
+                        if names.is_identifier(target) and not param_index(target) and target not in local_names \
+                                and (lower in ("setvar", "setvard") or target not in self.inference.globals):
                             info.declared.setdefault(target, "")
                     for event in _called_events(cmd):
                         info.called_events.add(event)
@@ -264,6 +269,9 @@ class Project(EntityClasses):
     def _initializer(self, var: str, t: str, raw: str, quoted: bool, ctx: FileContext) -> str:
         if raw == "":
             return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, string_literal(var))
+        if not quoted and param_index(raw):
+            # `setvard X PARAM1` also runs at load, when there are no parameters: X starts empty
+            return {INT: "0", FLOAT: "0.0f", BOOL: "false", VECTOR: "Vector3()"}.get(t, '""')
         expr = parse_token(raw, quoted)
         if isinstance(expr, Number):
             if t in (INT, FLOAT):

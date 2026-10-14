@@ -8,6 +8,7 @@ make else-if chains, merge nested ifs and pick early returns.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Callable
 
 # Precedence of an expression's outermost operator (higher binds weaker)
 ATOM, UNARY, MUL, ADD, COMPARE, EQUALITY, AND, OR = range(8)
@@ -28,12 +29,34 @@ class TExpr:
 class Stmt:
     comments: list[str] = field(default_factory=list, kw_only=True)
     trailing: str = field(default="", kw_only=True)
+    blank: bool = field(default=False, kw_only=True)    # an empty line before it (from the source)
+
+
+@dataclass
+class Assign:
+    """A Line that sets a variable to a whole new value."""
+    target: str                # identifier as written
+    type: str                  # the variable's type
+    value: TExpr               # the value before conversion to `type`
+    prefix: str = ""           # "float " when the line also declares the variable
+    field: bool = False        # a field (the engine and other scripts can read it by name)
+
+
+@dataclass
+class Update:
+    """A Line that sets a variable from its current value (`divide X 2`, `vectoradd V ...`)."""
+    target: str
+    type: str
+    apply: Callable[[TExpr], TExpr]    # current value -> new value (before conversion to `type`)
+    reads: str                         # code of the other operands
 
 
 @dataclass
 class Line(Stmt):
     code: str                  # without the semicolon
     declares: bool = False     # a variable declaration (never the only statement of a braceless body)
+    assign: Assign | None = field(default=None, kw_only=True)
+    update: Update | None = field(default=None, kw_only=True)
 
 
 @dataclass

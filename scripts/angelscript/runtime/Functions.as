@@ -84,16 +84,28 @@ mixin class LegacyFunctions
 		return Truthy(host.Function("cansee", { arg1 }));
 	}
 
-	// $relpos
+	// $relpos - offset from this entity, along its angles
 	Vector3 RelativePosition(const Vector3 &in arg1)
 	{
-		return Vec(host.Function("relpos", { Text(arg1) }));
+		return Vec(host.Function("relpos", { Text(arg1.x), Text(arg1.y), Text(arg1.z) }));
 	}
 
-	// $relvel
+	// $relpos - offset rotated by angles, from the world origin
+	Vector3 RelativePosition(const Vector3 &in arg1, const Vector3 &in arg2)
+	{
+		return Vec(host.Function("relpos", { Text(arg1), Text(arg2) }));
+	}
+
+	// $relvel - velocity along this entity's angles
 	Vector3 RelativeVelocity(const Vector3 &in arg1)
 	{
-		return Vec(host.Function("relvel", { Text(arg1) }));
+		return Vec(host.Function("relvel", { Text(arg1.x), Text(arg1.y), Text(arg1.z) }));
+	}
+
+	// $relvel - velocity along the given angles
+	Vector3 RelativeVelocity(const Vector3 &in arg1, const Vector3 &in arg2)
+	{
+		return Vec(host.Function("relvel", { Text(arg1), Text(arg2) }));
 	}
 
 	// $item_exists

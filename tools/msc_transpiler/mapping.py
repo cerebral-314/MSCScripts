@@ -226,6 +226,7 @@ class FunctionSpec:
     template: str | None = None    # native AngelScript with {0}, {1}... argument slots
     params: list[str] = field(default_factory=list)   # argument types for the wrapper/template
     doc: str = ""
+    components: bool = False       # the engine wants a single vector argument as x,y,z
 
 
 FUNCTIONS: dict[str, FunctionSpec] = {
@@ -261,8 +262,16 @@ FUNCTIONS: dict[str, FunctionSpec] = {
     "$get_tsphere": FunctionSpec("string", method="FindInSphere", params=["string", "float"], doc="`;`-list of entity ids in range, or `none`"),
     "$get_ground_height": FunctionSpec("float", method="GroundHeight", params=["Vector3"]),
     "$cansee": FunctionSpec("bool", method="CanSee", params=["string"], doc="Sets ent_lastseen"),
-    "$relpos": FunctionSpec("Vector3", method="RelativePosition", params=["Vector3"]),
-    "$relvel": FunctionSpec("Vector3", method="RelativeVelocity", params=["Vector3"]),
+    # One vector: an offset from this entity along its angles. Two: the offset rotated by the
+    # given angles, from the world origin. (The engine reads the one-vector form as x,y,z.)
+    "$relpos": FunctionSpec("Vector3", method="RelativePosition", params=["Vector3"], components=True,
+                            doc="offset from this entity, along its angles"),
+    "$relpos/2": FunctionSpec("Vector3", method="RelativePosition", params=["Vector3", "Vector3"],
+                              doc="offset rotated by angles, from the world origin"),
+    "$relvel": FunctionSpec("Vector3", method="RelativeVelocity", params=["Vector3"], components=True,
+                            doc="velocity along this entity's angles"),
+    "$relvel/2": FunctionSpec("Vector3", method="RelativeVelocity", params=["Vector3", "Vector3"],
+                              doc="velocity along the given angles"),
     "$item_exists": FunctionSpec("string", method="ItemExists", params=["entity", "string"]),
     "$angles": FunctionSpec("float", method="AnglesTo", params=["Vector3", "Vector3"], doc="2D yaw from one point to another"),
     "$dir": FunctionSpec("Vector3", method="DirectionTo", params=["Vector3", "Vector3"]),
@@ -390,7 +399,8 @@ def E(spec: str, doc: str = "") -> EventSpec:
 ENGINE_EVENTS: dict[str, EventSpec] = {
     "game_spawn": E(""), "spawn": E(""), "game_precache": E(""), "game_death": E(""), "game_predeath": E(""),
     "game_postspawn": E("string title, string damageMultiplier, string healthMultiplier, string params"),
-    "game_dynamically_created": E("string param1, string param2, string param3, string param4"),
+    # createnpc passes its own extra arguments on: what they are depends on the script (data/param_names.json)
+    "game_dynamically_created": E(""),
     "game_damaged": E("entity attacker, float damage, string damageType, float accuracyRoll, entity inflictor, string skill",
                       "Return a damage multiplier to scale the damage"),
     "game_damaged_other": E("entity target, float damage, string damageType, string damageEvent"),
@@ -417,5 +427,6 @@ ENGINE_EVENTS: dict[str, EventSpec] = {
     "game_hitground": E("float fallVelocity"),
     "game_takedamage": E("entity attacker, entity inflictor, float damage, string damageType"),
     "game_protect": E("entity attacker, float damage, string damageType"),
-    "game_activate": E("string param1, string param2, string param3, string param4"),
+    # passed by whatever fires it (use triggers, other scripts): named in data/param_names.json
+    "game_activate": E(""),
 }

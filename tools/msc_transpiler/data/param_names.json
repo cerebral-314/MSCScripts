@@ -1,0 +1,4535 @@
+{
+ "CB_TEST1": {
+  "1": "text"
+ },
+ "CB_TEST2": {
+  "1": "text"
+ },
+ "Catapaults": {
+  "1": "catapultCount"
+ },
+ "accept_quest": {
+  "1": "player"
+ },
+ "activate_items": {
+  "1": "activator"
+ },
+ "activate_storage": {
+  "1": "player"
+ },
+ "activate_tickets": {
+  "1": "player"
+ },
+ "activate_wall": {
+  "1": "target"
+ },
+ "add_beam": {
+  "1": "duration",
+  "2": "attachIdx",
+  "3": "outerColor",
+  "4": "innerColor"
+ },
+ "add_charge_level": {
+  "1": "chargeLevel"
+ },
+ "add_deposit_options": {
+  "1": "itemIdToken"
+ },
+ "add_dmg_points": {
+  "1": "points"
+ },
+ "add_dot_cold": {
+  "1": "ratio"
+ },
+ "add_dot_fire": {
+  "1": "ratio"
+ },
+ "add_dot_lightning": {
+  "1": "ratio"
+ },
+ "add_dot_poison": {
+  "1": "ratio"
+ },
+ "add_epic_arrows": {
+  "1": "arrowCount"
+ },
+ "add_gold": {
+  "1": "goldAmount"
+ },
+ "add_good_arrows": {
+  "1": "arrowCount"
+ },
+ "add_great_arrows": {
+  "1": "arrowCount"
+ },
+ "add_items": {
+  "1": "player",
+  "2": "playSound"
+ },
+ "add_minor_strike": {
+  "1": "target"
+ },
+ "add_noob_arrows": {
+  "1": "arrowCount"
+ },
+ "add_page": {
+  "1": "pageText"
+ },
+ "add_poison_bolt": {
+  "1": "origin"
+ },
+ "add_quest_participant": {
+  "1": "participant"
+ },
+ "add_stack_to_chest": {
+  "1": "itemScript",
+  "2": "quantity"
+ },
+ "add_symbol_me": {
+  "1": "player"
+ },
+ "add_to_chest": {
+  "1": "bankData"
+ },
+ "addgold": {
+  "1": "value",
+  "2": "goldAmount"
+ },
+ "addhp": {
+  "1": "hpAmount"
+ },
+ "addmp": {
+  "1": "mpAmount"
+ },
+ "adj_damage": {
+  "1": "armorValue",
+  "2": "incomingDamage"
+ },
+ "adj_vel": {
+  "1": "target"
+ },
+ "adjust_dmg": {
+  "1": "target",
+  "2": "damage"
+ },
+ "aim_cannon": {
+  "1": "aimer"
+ },
+ "alance_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "ally_hop": {
+  "1": "verticalDifference"
+ },
+ "anim_text": {
+  "1": "text"
+ },
+ "aoe_affect_target": {
+  "1": "target"
+ },
+ "apply_aoe_effect": {
+  "1": "target"
+ },
+ "apply_damage": {
+  "1": "target"
+ },
+ "apply_dot": {
+  "1": "target"
+ },
+ "apply_dot1": {
+  "1": "target"
+ },
+ "apply_dot2": {
+  "1": "target"
+ },
+ "apply_element_dot": {
+  "1": "target",
+  "2": "element"
+ },
+ "as_ally_stuck_so_move": {
+  "1": "fleePoint"
+ },
+ "as_call_function": {
+  "1": "methodName",
+  "2": "methodArg"
+ },
+ "as_load_module": {
+  "1": "moduleFile"
+ },
+ "as_npcatk_suspend_ai": {
+  "1": "value",
+  "2": "value2"
+ },
+ "as_tele_out": {
+  "1": "seconds",
+  "2": "returnPoint"
+ },
+ "as_tele_to_player_loop": {
+  "1": "player"
+ },
+ "atk1_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "atk2_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "atk_anim": {
+  "1": "mpRequired",
+  "2": "rankLabel"
+ },
+ "attack2_bolt_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "attack_bolt_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "attack_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "attack_lance_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "attack_poke1_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "attack_poke2_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "attack_poke2_strike": {
+  "1": "hitType",
+  "2": "startPosition"
+ },
+ "attack_sound": {
+  "1": "pitch"
+ },
+ "attack_target": {
+  "1": "target"
+ },
+ "aura_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "axe_em": {
+  "1": "winner"
+ },
+ "axethrow_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "ball_dodamage": {
+  "1": "hit",
+  "2": "target",
+  "3": "startPosition",
+  "4": "endPosition",
+  "5": "damageType",
+  "6": "damageAmount"
+ },
+ "bank_convert": {
+  "1": "player"
+ },
+ "bank_convert_keep": {
+  "1": "itemName",
+  "2": "quantity"
+ },
+ "bank_has_anything_loop": {
+  "1": "playerId"
+ },
+ "bank_has_item_loop": {
+  "1": "playerId",
+  "2": "itemScriptName"
+ },
+ "bank_openaccount": {
+  "1": "player"
+ },
+ "bank_trade": {
+  "1": "player"
+ },
+ "barmor_update_vest": {
+  "1": "race",
+  "2": "gender",
+  "3": "debug"
+ },
+ "basecompanion_catchup": {
+  "1": "emergency"
+ },
+ "baseguard_tobattle": {
+  "1": "enemy"
+ },
+ "basesummon_say_attackall": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_attacktarget": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_come": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_defend": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_dismiss": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_guard": {
+  "1": "value",
+  "2": "source"
+ },
+ "basesummon_say_report": {
+  "1": "value",
+  "2": "source"
+ },
+ "basevendor_offerstore": {
+  "1": "target"
+ },
+ "bchat_auto_mouth_move": {
+  "1": "sentenceTime"
+ },
+ "bcompanion_regme": {
+  "1": "owner"
+ },
+ "bd_debug": {
+  "1": "caller",
+  "2": "varType",
+  "3": "varName",
+  "4": "key"
+ },
+ "beam_charge": {
+  "1": "targetOrigin"
+ },
+ "beam_dodamage": {
+  "1": "hit",
+  "2": "hitEntity",
+  "3": "startPosition",
+  "4": "endPosition",
+  "5": "damageType",
+  "6": "damageAmount"
+ },
+ "beam_fire": {
+  "1": "destination"
+ },
+ "beam_jump": {
+  "1": "destination"
+ },
+ "beam_silent": {
+  "1": "origin",
+  "2": "angles"
+ },
+ "bear_leap": {
+  "1": "target"
+ },
+ "bear_transformation_end": {
+  "1": "reason"
+ },
+ "bf_suspend_stuck": {
+  "1": "duration"
+ },
+ "bflinch_suspend_flinch": {
+  "1": "duration"
+ },
+ "bgoblin_chief_died": {
+  "1": "position"
+ },
+ "bigswipe_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "bite1_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "bite2_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "bite3_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "bite_dodamage": {
+  "1": "hit",
+  "2": "target",
+  "3": "startPosition",
+  "4": "endPosition"
+ },
+ "bitem_reserve": {
+  "1": "playerId"
+ },
+ "blamb": {
+  "1": "blastRadius",
+  "2": "damage",
+  "3": "damageType"
+ },
+ "blood_drain": {
+  "1": "target",
+  "2": "healAmount"
+ },
+ "bloodstone_toggle": {
+  "1": "equipped"
+ },
+ "bm_gold_spew": {
+  "1": "goldPerBag",
+  "2": "bagsPerPlayer",
+  "3": "distance",
+  "4": "minBags",
+  "5": "maxBags"
+ },
+ "bolt_dodamage": {
+  "1": "hit",
+  "2": "target",
+  "3": "startPosition",
+  "4": "endPosition"
+ },
+ "bolt_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "boltscan_dodamage": {
+  "1": "hit",
+  "2": "target",
+  "3": "startPosition",
+  "4": "endPosition"
+ },
+ "breath_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "breath_on": {
+  "1": "breathType"
+ },
+ "bs_global_command": {
+  "1": "deadPlayer",
+  "2": "command",
+  "3": "reason"
+ },
+ "build_bar": {
+  "1": "barLength"
+ },
+ "build_quest_complete_menu": {
+  "1": "player"
+ },
+ "build_stores": {
+  "1": "playerId"
+ },
+ "bundle_arrows_menu": {
+  "1": "value",
+  "2": "bundleAmount"
+ },
+ "bundle_bolts_menu": {
+  "1": "value",
+  "2": "bundleAmount"
+ },
+ "burst_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "buy_scroll": {
+  "1": "player"
+ },
+ "bweapon_effect_remove": {
+  "1": "reason"
+ },
+ "call_for_help": {
+  "1": "attacker"
+ },
+ "call_timein": {
+  "1": "entity"
+ },
+ "call_timeout": {
+  "1": "entity"
+ },
+ "calm_down": {
+  "1": "reason",
+  "2": "player"
+ },
+ "cancel_trade": {
+  "1": "player"
+ },
+ "cast_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "cast_strike": {
+  "1": "value",
+  "2": "value2",
+  "3": "value3"
+ },
+ "ce_wave_do_heal": {
+  "1": "target"
+ },
+ "center_beam": {
+  "1": "origin",
+  "2": "angles"
+ },
+ "change_height": {
+  "1": "viewHeight"
+ },
+ "change_name_intro": {
+  "1": "target"
+ },
+ "change_sky": {
+  "1": "skyName"
+ },
+ "chaos_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "chat_add_text": {
+  "1": "sequenceName",
+  "2": "lineText",
+  "3": "displayTime",
+  "4": "animation",
+  "5": "eventName",
+  "6": "sound",
+  "7": "sound2",
+  "8": "sound3"
+ },
+ "chat_clear_que": {
+  "1": "callingEvent"
+ },
+ "chat_face_speaker": {
+  "1": "speaker"
+ },
+ "chat_move_mouth": {
+  "1": "duration"
+ },
+ "chat_now": {
+  "1": "text",
+  "2": "displayTime",
+  "3": "animation",
+  "4": "eventName",
+  "5": "sound",
+  "6": "sound2",
+  "7": "sound3",
+  "8": "sound4"
+ },
+ "chat_start_sequence": {
+  "1": "sequenceName",
+  "2": "option",
+  "3": "option2",
+  "4": "option3"
+ },
+ "chat_warning": {
+  "1": "player"
+ },
+ "check_ammo_strings": {
+  "1": "scriptName"
+ },
+ "check_can_vampire": {
+  "1": "owner",
+  "2": "target"
+ },
+ "check_can_vote": {
+  "1": "player"
+ },
+ "check_damage": {
+  "1": "target"
+ },
+ "check_damage_type": {
+  "1": "damageType"
+ },
+ "check_do_bonus": {
+  "1": "timeAdded"
+ },
+ "check_face": {
+  "1": "target"
+ },
+ "check_for_item": {
+  "1": "item"
+ },
+ "check_inventory": {
+  "1": "category",
+  "2": "passString"
+ },
+ "check_player_status": {
+  "1": "player",
+  "2": "react"
+ },
+ "check_quest_items": {
+  "1": "questCode"
+ },
+ "check_vote_options": {
+  "1": "voteType",
+  "2": "mapName"
+ },
+ "chicken_run": {
+  "1": "duration"
+ },
+ "choose_dot": {
+  "1": "target",
+  "2": "skipClientUpdate"
+ },
+ "civilian_attacked": {
+  "1": "attacker"
+ },
+ "cl_beam": {
+  "1": "beamStart"
+ },
+ "cl_error": {
+  "1": "message"
+ },
+ "cl_handmagic_beam": {
+  "1": "hand"
+ },
+ "cl_light_update": {
+  "1": "lightAction",
+  "2": "ownerIndex",
+  "3": "lightColor",
+  "4": "lightRadius"
+ },
+ "cl_metal_cave_light": {
+  "1": "modelIndex"
+ },
+ "cl_playsound": {
+  "1": "sound",
+  "2": "volume",
+  "3": "location"
+ },
+ "cl_pos_update": {
+  "1": "position"
+ },
+ "cl_set_halo": {
+  "1": "haloState",
+  "2": "playerIndex"
+ },
+ "cl_set_height": {
+  "1": "height"
+ },
+ "cl_set_maxcharge": {
+  "1": "maxCharge"
+ },
+ "cl_svplaysound": {
+  "1": "channel",
+  "2": "volume",
+  "3": "sound",
+  "4": "origin"
+ },
+ "cl_tele1_fx": {
+  "1": "origin"
+ },
+ "claw_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "clawfloor_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "clear_quest": {
+  "1": "player"
+ },
+ "clear_target": {
+  "1": "reason"
+ },
+ "client_activate": {
+  "1": "owner",
+  "2": "hand",
+  "3": "fxColor",
+  "4": "lifetime",
+  "5": "sprite",
+  "6": "flag",
+  "7": "specialFlags",
+  "8": "glowRadius"
+ },
+ "clitem_debug": {
+  "1": "callerIndex",
+  "2": "dataType",
+  "3": "varName",
+  "4": "key"
+ },
+ "closeswing_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "collide_clfx_proj": {
+  "1": "target"
+ },
+ "companion_abandon": {
+  "1": "value",
+  "2": "source"
+ },
+ "companion_unsummon": {
+  "1": "reason",
+  "2": "value",
+  "3": "flag"
+ },
+ "cone_breath_on": {
+  "1": "range",
+  "2": "aoe"
+ },
+ "cone_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "confirm_forget_spell": {
+  "1": "player",
+  "2": "spellIndex"
+ },
+ "console_health_toggle": {
+  "1": "showHealth"
+ },
+ "create_light": {
+  "1": "origin"
+ },
+ "create_model": {
+  "1": "position"
+ },
+ "create_sprite_2": {
+  "1": "attachment"
+ },
+ "create_treasure": {
+  "1": "value",
+  "2": "scriptName"
+ },
+ "createmodel": {
+  "1": "position"
+ },
+ "cycle_npc": {
+  "1": "mode"
+ },
+ "cycle_up": {
+  "1": "reason"
+ },
+ "damage_touched": {
+  "1": "target"
+ },
+ "dark_burst": {
+  "1": "origin",
+  "2": "radius"
+ },
+ "dbeam_color": {
+  "1": "color",
+  "2": "width"
+ },
+ "dbeam_target": {
+  "1": "target"
+ },
+ "dbeam_target_multi": {
+  "1": "targetList"
+ },
+ "dbolt_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "dburst_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "debuff_scriptflag_update": {
+  "1": "intensity",
+  "2": "duration"
+ },
+ "debug_beam": {
+  "1": "startPosition",
+  "2": "endPosition",
+  "3": "beamColor"
+ },
+ "debug_circle": {
+  "1": "center",
+  "2": "radius"
+ },
+ "decline_quest": {
+  "1": "player"
+ },
+ "delay_attack": {
+  "1": "delay"
+ },
+ "delay_spell": {
+  "1": "delay"
+ },
+ "delete_item": {
+  "1": "itemToDelete"
+ },
+ "demon_blood": {
+  "1": "damageRatio"
+ },
+ "demon_rage": {
+  "1": "charges"
+ },
+ "demon_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "hitEntity"
+ },
+ "deposit_item": {
+  "1": "owner",
+  "2": "itemId"
+ },
+ "dev_cat_points": {
+  "1": "devId"
+ },
+ "dev_command": {
+  "1": "eventName",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "dev_test_spawn": {
+  "1": "target",
+  "2": "pointNumber"
+ },
+ "dewm_plant_fx": {
+  "1": "origin"
+ },
+ "dinner_bell": {
+  "1": "soundSource"
+ },
+ "disc_dodamage": {
+  "1": "hit",
+  "2": "hitEntity"
+ },
+ "display_timing": {
+  "1": "message",
+  "2": "value"
+ },
+ "dmgstk_damaged_other": {
+  "1": "entity",
+  "2": "value",
+  "3": "value2"
+ },
+ "dmgstk_dodamage": {
+  "1": "hit",
+  "2": "hitEntity",
+  "3": "startPosition",
+  "4": "endPosition",
+  "5": "dmgType",
+  "6": "damageAmount"
+ },
+ "do_attack": {
+  "1": "damage"
+ },
+ "do_boom": {
+  "1": "sourceEntity"
+ },
+ "do_crest": {
+  "1": "caller"
+ },
+ "do_effect": {
+  "1": "effectPosition"
+ },
+ "do_explode": {
+  "1": "value"
+ },
+ "do_fire_burst": {
+  "1": "projectilePosition"
+ },
+ "do_fire_wave": {
+  "1": "startPosition"
+ },
+ "do_fling": {
+  "1": "velocity"
+ },
+ "do_forge_fx": {
+  "1": "fxTokens",
+  "2": "weaponScriptName"
+ },
+ "do_goal": {
+  "1": "team"
+ },
+ "do_hop": {
+  "1": "verticalDifference"
+ },
+ "do_ice_circle": {
+  "1": "origin"
+ },
+ "do_lift": {
+  "1": "side",
+  "2": "pillarCheckId"
+ },
+ "do_lightning": {
+  "1": "endOrigin"
+ },
+ "do_nova_part_2": {
+  "1": "target"
+ },
+ "do_nuke": {
+  "1": "target",
+  "2": "damage"
+ },
+ "do_playsound": {
+  "1": "channel",
+  "2": "volume",
+  "3": "soundName",
+  "4": "attenuation",
+  "5": "pitch"
+ },
+ "do_projectile": {
+  "1": "offset"
+ },
+ "do_raise": {
+  "1": "raiseTime"
+ },
+ "do_repel": {
+  "1": "target"
+ },
+ "do_roam": {
+  "1": "flag"
+ },
+ "do_shock": {
+  "1": "shockTarget",
+  "2": "damage"
+ },
+ "do_special_damage": {
+  "1": "target"
+ },
+ "do_stack": {
+  "1": "stackTarget",
+  "2": "damageAmount"
+ },
+ "do_submerge": {
+  "1": "noTeleport",
+  "2": "reason"
+ },
+ "do_target_me": {
+  "1": "flag"
+ },
+ "do_teleport": {
+  "1": "reason",
+  "2": "option"
+ },
+ "do_text": {
+  "1": "user",
+  "2": "data"
+ },
+ "do_text2": {
+  "1": "menuId"
+ },
+ "do_torch_fx": {
+  "1": "fxType"
+ },
+ "do_transform": {
+  "1": "center"
+ },
+ "dot_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "dot_scriptflag_update": {
+  "1": "damage",
+  "2": "duration"
+ },
+ "draw_beams": {
+  "1": "targetIdxList"
+ },
+ "drink_pot": {
+  "1": "drinkType"
+ },
+ "dude_said_yes": {
+  "1": "speaker"
+ },
+ "dumpquest": {
+  "1": "questName"
+ },
+ "edit_beam": {
+  "1": "prop",
+  "2": "value"
+ },
+ "effect_damage": {
+  "1": "damage",
+  "2": "attacker",
+  "3": "duration",
+  "4": "damageType"
+ },
+ "effect_increase_duration": {
+  "1": "seconds"
+ },
+ "effect_set_duration": {
+  "1": "duration"
+ },
+ "effectme": {
+  "1": "effectScript",
+  "2": "duration",
+  "3": "owner",
+  "4": "value",
+  "5": "skill",
+  "6": "value2"
+ },
+ "effectmestack": {
+  "1": "effectScript",
+  "2": "duration",
+  "3": "owner",
+  "4": "value",
+  "5": "skill",
+  "6": "value2"
+ },
+ "effecttarg": {
+  "1": "effectScript",
+  "2": "duration",
+  "3": "owner",
+  "4": "value",
+  "5": "skill",
+  "6": "value2"
+ },
+ "effecttargstack": {
+  "1": "effectScript",
+  "2": "duration",
+  "3": "owner",
+  "4": "value",
+  "5": "skill",
+  "6": "value2"
+ },
+ "elf_beam_special": {
+  "1": "target"
+ },
+ "elf_joke": {
+  "1": "value"
+ },
+ "end_fx": {
+  "1": "reason"
+ },
+ "end_parry": {
+  "1": "source"
+ },
+ "enhance_skill": {
+  "1": "playerId",
+  "2": "skill"
+ },
+ "environment_change": {
+  "1": "environmentState"
+ },
+ "erase_spell": {
+  "1": "target"
+ },
+ "errupt_on": {
+  "1": "eruptType"
+ },
+ "eventall": {
+  "1": "scriptEvent",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "eventgm": {
+  "1": "scriptEvent",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "eventme": {
+  "1": "scriptEvent",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "eventplayers": {
+  "1": "scriptEvent",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "eventtarg": {
+  "1": "scriptEvent",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "exbow_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "explode_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "ext_abreath_now": {
+  "1": "breathType"
+ },
+ "ext_acid_bomb": {
+  "1": "landPosition"
+ },
+ "ext_acid_feaura_activate": {
+  "1": "dotDamage",
+  "2": "radius"
+ },
+ "ext_activate_items": {
+  "1": "playerId"
+ },
+ "ext_addgold": {
+  "1": "goldAmount"
+ },
+ "ext_aim": {
+  "1": "angle"
+ },
+ "ext_anim": {
+  "1": "animName"
+ },
+ "ext_arrow_hit": {
+  "1": "hit",
+  "2": "hitEntity",
+  "3": "startPosition"
+ },
+ "ext_arrow_landed": {
+  "1": "origin"
+ },
+ "ext_attack_master_target": {
+  "1": "target"
+ },
+ "ext_beam_att": {
+  "1": "target"
+ },
+ "ext_bear_die": {
+  "1": "reason"
+ },
+ "ext_bear_mode": {
+  "1": "bearImageId"
+ },
+ "ext_bleed": {
+  "1": "color",
+  "2": "amount"
+ },
+ "ext_block_weather": {
+  "1": "flag"
+ },
+ "ext_bodyparts": {
+  "1": "legs",
+  "2": "head",
+  "3": "torso",
+  "4": "arms",
+  "5": "armor"
+ },
+ "ext_box_token": {
+  "1": "scanType",
+  "2": "scanRange",
+  "3": "scanOrigin"
+ },
+ "ext_change_sky": {
+  "1": "skyName"
+ },
+ "ext_check_quest_item": {
+  "1": "itemCode",
+  "2": "callerId"
+ },
+ "ext_cl_clientcmd": {
+  "1": "commands"
+ },
+ "ext_clevent_all": {
+  "1": "eventName",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "ext_clevent_me": {
+  "1": "eventName",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "ext_clientcmd": {
+  "1": "command"
+ },
+ "ext_con": {
+  "1": "controllerIndex",
+  "2": "controllerValue"
+ },
+ "ext_dbg": {
+  "1": "debugValue"
+ },
+ "ext_dburst": {
+  "1": "origin",
+  "2": "radius",
+  "3": "repelFlag",
+  "4": "playSound"
+ },
+ "ext_debug_que": {
+  "1": "message"
+ },
+ "ext_delay_playsound": {
+  "1": "delay",
+  "2": "channel",
+  "3": "volume",
+  "4": "soundFile"
+ },
+ "ext_delay_target": {
+  "1": "delay",
+  "2": "target"
+ },
+ "ext_demon": {
+  "1": "skin"
+ },
+ "ext_dmg_add_dot": {
+  "1": "damageType",
+  "2": "ratio"
+ },
+ "ext_dmg_adjust": {
+  "1": "damageType",
+  "2": "ratio"
+ },
+ "ext_dmgmulti": {
+  "1": "multiplier"
+ },
+ "ext_dmgpoint_bonus": {
+  "1": "bonusPoints",
+  "2": "message"
+ },
+ "ext_dodamage": {
+  "1": "target",
+  "2": "hitMode",
+  "3": "damage",
+  "4": "hitChance",
+  "5": "attacker",
+  "6": "damageSkill",
+  "7": "value"
+ },
+ "ext_dot_stat": {
+  "1": "stat"
+ },
+ "ext_drainstamina": {
+  "1": "amount"
+ },
+ "ext_dump_chat": {
+  "1": "chatSequence"
+ },
+ "ext_ent_list_sort": {
+  "1": "scanFilter",
+  "2": "searchRange",
+  "3": "searchOrigin",
+  "4": "sortBy"
+ },
+ "ext_environment_change": {
+  "1": "environment"
+ },
+ "ext_faceme": {
+  "1": "target"
+ },
+ "ext_fire_aura_activate": {
+  "1": "dot",
+  "2": "size"
+ },
+ "ext_fire_bomb": {
+  "1": "landPosition"
+ },
+ "ext_flash_bang": {
+  "1": "origin",
+  "2": "radius",
+  "3": "sourceOwner"
+ },
+ "ext_follow": {
+  "1": "target"
+ },
+ "ext_frock_hit": {
+  "1": "playerIndex"
+ },
+ "ext_gabe_musak": {
+  "1": "stage"
+ },
+ "ext_gcod": {
+  "1": "origin",
+  "2": "damage",
+  "3": "duration"
+ },
+ "ext_givexp": {
+  "1": "xpAmount"
+ },
+ "ext_glob_landed": {
+  "1": "origin"
+ },
+ "ext_glow_block": {
+  "1": "blockFlag"
+ },
+ "ext_got_quest_item": {
+  "1": "itemCode"
+ },
+ "ext_haste_cooldown": {
+  "1": "cooldown"
+ },
+ "ext_hearingsensitivity": {
+  "1": "sensitivity"
+ },
+ "ext_hit_chance": {
+  "1": "hitMultiplier"
+ },
+ "ext_hitnpc": {
+  "1": "targetIndex"
+ },
+ "ext_holy_aura": {
+  "1": "duration",
+  "2": "radius",
+  "3": "power"
+ },
+ "ext_hud_icon": {
+  "1": "icon",
+  "2": "refName",
+  "3": "xPercent",
+  "4": "yPercent",
+  "5": "heightPercent",
+  "6": "widthPercent",
+  "7": "duration"
+ },
+ "ext_iexist_test": {
+  "1": "itemName",
+  "2": "amount"
+ },
+ "ext_invalidate": {
+  "1": "invalidFlag"
+ },
+ "ext_item_swift_blade": {
+  "1": "baseSpeed",
+  "2": "baseStrikeDelay"
+ },
+ "ext_lcod": {
+  "1": "origin",
+  "2": "damage",
+  "3": "duration"
+ },
+ "ext_lesser_leadfoot": {
+  "1": "stunAmount"
+ },
+ "ext_lighten": {
+  "1": "gravity",
+  "2": "glowFlag",
+  "3": "glowColor",
+  "4": "scale"
+ },
+ "ext_lshield_on": {
+  "1": "duration"
+ },
+ "ext_makepet": {
+  "1": "owner"
+ },
+ "ext_master_died": {
+  "1": "master"
+ },
+ "ext_mommy_died": {
+  "1": "deathPosition"
+ },
+ "ext_mon_playsound": {
+  "1": "soundFile",
+  "2": "soundSource",
+  "3": "maxRange"
+ },
+ "ext_monsterspawn_removed": {
+  "1": "spawnId"
+ },
+ "ext_nudge": {
+  "1": "target"
+ },
+ "ext_olof_setstatus": {
+  "1": "status"
+ },
+ "ext_orcfor_boss_musak": {
+  "1": "stage",
+  "2": "bossOrigin"
+ },
+ "ext_picked": {
+  "1": "player"
+ },
+ "ext_play_music": {
+  "1": "file"
+ },
+ "ext_play_music_me": {
+  "1": "file"
+ },
+ "ext_playanim": {
+  "1": "animation"
+ },
+ "ext_player_got_item": {
+  "1": "itemEntity",
+  "2": "owner"
+ },
+ "ext_playowneranim": {
+  "1": "animation",
+  "2": "value",
+  "3": "value2",
+  "4": "value3"
+ },
+ "ext_playrandomsound": {
+  "1": "channel",
+  "2": "volume",
+  "3": "attenuation",
+  "4": "pitch",
+  "5": "sound1",
+  "6": "sound2",
+  "7": "sound3",
+  "8": "sound4",
+  "9": "sound5"
+ },
+ "ext_playsound": {
+  "1": "soundFile",
+  "2": "sourceOrigin",
+  "3": "maxRange",
+  "4": "volume",
+  "5": "pitch"
+ },
+ "ext_playsound_kiss": {
+  "1": "channel",
+  "2": "volume",
+  "3": "soundFile"
+ },
+ "ext_poison_aura_activate": {
+  "1": "dot",
+  "2": "size"
+ },
+ "ext_poison_bolt": {
+  "1": "origin"
+ },
+ "ext_proj_elemental_hit": {
+  "1": "origin",
+  "2": "element"
+ },
+ "ext_proj_land": {
+  "1": "value",
+  "2": "target",
+  "3": "landPosition"
+ },
+ "ext_proj_landed": {
+  "1": "origin"
+ },
+ "ext_proj_touch": {
+  "1": "target"
+ },
+ "ext_projectile_landed": {
+  "1": "landingSource"
+ },
+ "ext_quake_fx": {
+  "1": "duration"
+ },
+ "ext_quest": {
+  "1": "questName",
+  "2": "questData"
+ },
+ "ext_rec_viewmodel_idx": {
+  "1": "viewmodelIndex"
+ },
+ "ext_receive_quest_item": {
+  "1": "itemCode"
+ },
+ "ext_reduct_xp": {
+  "1": "xpReduction"
+ },
+ "ext_refresh_ice_shield": {
+  "1": "duration",
+  "2": "shielder"
+ },
+ "ext_register_armor": {
+  "1": "armorId"
+ },
+ "ext_register_corrode": {
+  "1": "duration"
+ },
+ "ext_register_element": {
+  "1": "uniqueName",
+  "2": "element",
+  "3": "resistPercent"
+ },
+ "ext_register_fists": {
+  "1": "fistsId"
+ },
+ "ext_register_helm": {
+  "1": "helmId"
+ },
+ "ext_register_projectile": {
+  "1": "projectileId"
+ },
+ "ext_register_weapon": {
+  "1": "weaponEntity",
+  "2": "tag",
+  "3": "element",
+  "4": "resistPercent"
+ },
+ "ext_remove_effect": {
+  "1": "effectName"
+ },
+ "ext_remove_status_flag": {
+  "1": "nameId"
+ },
+ "ext_remove_status_flags_type": {
+  "1": "flagType"
+ },
+ "ext_rename_me": {
+  "1": "newName"
+ },
+ "ext_render": {
+  "1": "renderMode",
+  "2": "renderAmount"
+ },
+ "ext_render_items": {
+  "1": "owner",
+  "2": "renderMode",
+  "3": "renderAmount"
+ },
+ "ext_repel": {
+  "1": "target",
+  "2": "origin",
+  "3": "strength",
+  "4": "verticalBoost",
+  "5": "maxTargetHp",
+  "6": "overrideFlag"
+ },
+ "ext_repel_burst": {
+  "1": "burstDamage",
+  "2": "radius",
+  "3": "falloff",
+  "4": "damageType",
+  "5": "damageSkill",
+  "6": "strength",
+  "7": "maxHp",
+  "8": "origin"
+ },
+ "ext_repel_shield": {
+  "1": "duration",
+  "2": "radius",
+  "3": "specialEffect"
+ },
+ "ext_report_armor": {
+  "1": "armorType",
+  "2": "player"
+ },
+ "ext_saytextrange": {
+  "1": "range"
+ },
+ "ext_sbent": {
+  "1": "viewmodelIndex",
+  "2": "startAttach",
+  "3": "endAttach"
+ },
+ "ext_sbents": {
+  "1": "startEntity",
+  "2": "endEntity"
+ },
+ "ext_sbfollow": {
+  "1": "viewmodelIndex",
+  "2": "attachPoint"
+ },
+ "ext_scale": {
+  "1": "ratio",
+  "2": "noBoundingFix",
+  "3": "noRangeFix"
+ },
+ "ext_scan_pet": {
+  "1": "petType"
+ },
+ "ext_send_menu": {
+  "1": "target"
+ },
+ "ext_send_tele_point": {
+  "1": "teleportPosition"
+ },
+ "ext_set_alco_type": {
+  "1": "alcoType",
+  "2": "spawnItem"
+ },
+ "ext_set_armor": {
+  "1": "bodyGroup",
+  "2": "bodyIndex"
+ },
+ "ext_set_dark_level": {
+  "1": "rating"
+ },
+ "ext_set_freeze_amt": {
+  "1": "freezeAmount"
+ },
+ "ext_set_frozen": {
+  "1": "duration"
+ },
+ "ext_set_glow": {
+  "1": "glowEnabled"
+ },
+ "ext_set_hand_id": {
+  "1": "handIndex",
+  "2": "item"
+ },
+ "ext_set_health": {
+  "1": "health",
+  "2": "maxHealth"
+ },
+ "ext_set_map": {
+  "1": "mapName",
+  "2": "localSpawn",
+  "3": "destSpawn"
+ },
+ "ext_set_next_circle_heal": {
+  "1": "healAmount"
+ },
+ "ext_set_owner": {
+  "1": "player"
+ },
+ "ext_set_parry": {
+  "1": "parrySkill"
+ },
+ "ext_set_reward": {
+  "1": "rewardGiven"
+ },
+ "ext_set_spiral": {
+  "1": "spiralKind",
+  "2": "damage"
+ },
+ "ext_set_status_flag": {
+  "1": "nameId",
+  "2": "type",
+  "3": "value",
+  "4": "expires",
+  "5": "message"
+ },
+ "ext_set_swift_blade": {
+  "1": "speedRatio"
+ },
+ "ext_setangle": {
+  "1": "angles",
+  "2": "value"
+ },
+ "ext_setbody": {
+  "1": "bodyGroup",
+  "2": "submodel"
+ },
+ "ext_setbodytype": {
+  "1": "bodyType",
+  "2": "armorId"
+ },
+ "ext_setgold": {
+  "1": "goldAmount"
+ },
+ "ext_setheadtype": {
+  "1": "headIndex"
+ },
+ "ext_setmodelbody": {
+  "1": "bodyGroup",
+  "2": "submodel"
+ },
+ "ext_setrender": {
+  "1": "renderMode"
+ },
+ "ext_setskin": {
+  "1": "skinName"
+ },
+ "ext_setspawn": {
+  "1": "spawnName"
+ },
+ "ext_setstat": {
+  "1": "statName",
+  "2": "statValue"
+ },
+ "ext_setstats": {
+  "1": "skillValue"
+ },
+ "ext_sfaura_end": {
+  "1": "endSource"
+ },
+ "ext_sfaura_start": {
+  "1": "item"
+ },
+ "ext_shield_up": {
+  "1": "raised"
+ },
+ "ext_show_hbar_monster": {
+  "1": "targetToShow",
+  "2": "forceShow"
+ },
+ "ext_skin": {
+  "1": "legs"
+ },
+ "ext_speak": {
+  "1": "text"
+ },
+ "ext_sphere_token": {
+  "1": "scanType",
+  "2": "scanRange",
+  "3": "scanOrigin"
+ },
+ "ext_sphere_token_byrange": {
+  "1": "scanType",
+  "2": "scanRange",
+  "3": "scanOrigin"
+ },
+ "ext_sphere_token_x": {
+  "1": "scanType",
+  "2": "scanRange"
+ },
+ "ext_spider_protect": {
+  "1": "duration",
+  "2": "protectAmount",
+  "3": "effectTag"
+ },
+ "ext_stam": {
+  "1": "drainAmount"
+ },
+ "ext_sub": {
+  "1": "submodel",
+  "2": "animation"
+ },
+ "ext_suicide_chance": {
+  "1": "suicideChance"
+ },
+ "ext_summon_pets_new": {
+  "1": "player",
+  "2": "petScript"
+ },
+ "ext_summon_register_pet": {
+  "1": "pet"
+ },
+ "ext_summon_unique": {
+  "1": "summonTag"
+ },
+ "ext_super_lure": {
+  "1": "lureTarget",
+  "2": "race",
+  "3": "moveMode"
+ },
+ "ext_svplaysound_kiss": {
+  "1": "channel",
+  "2": "volume",
+  "3": "sound",
+  "4": "attenuation",
+  "5": "pitch"
+ },
+ "ext_targeted_by_mob": {
+  "1": "attacker"
+ },
+ "ext_test": {
+  "1": "value",
+  "2": "value2",
+  "3": "value3",
+  "4": "value4"
+ },
+ "ext_tod_lock": {
+  "1": "timeOfDay"
+ },
+ "ext_toss_spear": {
+  "1": "chargeLevel",
+  "2": "projectile",
+  "3": "sourceOrigin",
+  "4": "target",
+  "5": "speed",
+  "6": "damage",
+  "7": "cof",
+  "8": "skill"
+ },
+ "ext_tosscre": {
+  "1": "hand",
+  "2": "type"
+ },
+ "ext_tossprojectile": {
+  "1": "projectile",
+  "2": "view",
+  "3": "target",
+  "4": "speed",
+  "5": "damage",
+  "6": "cof",
+  "7": "skill",
+  "8": "value",
+  "9": "value2"
+ },
+ "ext_touch": {
+  "1": "touched"
+ },
+ "ext_turn": {
+  "1": "yaw"
+ },
+ "ext_under_attack1": {
+  "1": "attacker"
+ },
+ "ext_under_attack2": {
+  "1": "target"
+ },
+ "ext_unreg_pets": {
+  "1": "owner"
+ },
+ "ext_unsolid": {
+  "1": "time"
+ },
+ "ext_unsummon_pets_new": {
+  "1": "player",
+  "2": "pet",
+  "3": "petRequested"
+ },
+ "ext_unsummon_unique": {
+  "1": "summonTag"
+ },
+ "ext_untargeted_by_mob": {
+  "1": "attacker"
+ },
+ "ext_update": {
+  "1": "origin",
+  "2": "angles",
+  "3": "velocity"
+ },
+ "ext_urdual_slow": {
+  "1": "releaseTime"
+ },
+ "ext_viewdist": {
+  "1": "viewDistance"
+ },
+ "ext_vulnerable": {
+  "1": "value"
+ },
+ "ext_weather_change": {
+  "1": "weather"
+ },
+ "ext_weather_force_change": {
+  "1": "weather"
+ },
+ "ext_weather_manual_change": {
+  "1": "weather"
+ },
+ "ext_webbed": {
+  "1": "decayTime"
+ },
+ "ext_wink_out": {
+  "1": "spawnPosition",
+  "2": "delay"
+ },
+ "ext_wraith_active": {
+  "1": "status"
+ },
+ "extorter_slain": {
+  "1": "attacker"
+ },
+ "extsoc_score": {
+  "1": "winner"
+ },
+ "extsoc_show_scores": {
+  "1": "redScore",
+  "2": "blueScore"
+ },
+ "extsorc_make_team_faster": {
+  "1": "team"
+ },
+ "extsorc_make_team_normal": {
+  "1": "team"
+ },
+ "extsorc_make_team_slower": {
+  "1": "team"
+ },
+ "eye_beam_contact": {
+  "1": "spawnPosition"
+ },
+ "eye_beam_fire": {
+  "1": "position",
+  "2": "value"
+ },
+ "eye_beam_green": {
+  "1": "position",
+  "2": "value"
+ },
+ "eye_beam_prep_cl": {
+  "1": "position",
+  "2": "value"
+ },
+ "eye_beam_prep_cl2": {
+  "1": "position",
+  "2": "value"
+ },
+ "eye_beam_switchtargets": {
+  "1": "target"
+ },
+ "eye_breath_fire": {
+  "1": "position",
+  "2": "fireAngle"
+ },
+ "face_me": {
+  "1": "target"
+ },
+ "face_speaker": {
+  "1": "speaker"
+ },
+ "face_target": {
+  "1": "target"
+ },
+ "filter_by_reject": {
+  "1": "outcome"
+ },
+ "filter_by_space": {
+  "1": "targetPlayer",
+  "2": "value"
+ },
+ "finalize_state": {
+  "1": "timeOfDay"
+ },
+ "find_next_pit": {
+  "1": "mode",
+  "2": "pickType"
+ },
+ "find_spawn_point": {
+  "1": "target"
+ },
+ "fire_bolt": {
+  "1": "startPosition",
+  "2": "endPosition",
+  "3": "ownerAngles",
+  "4": "explode"
+ },
+ "fire_projectile": {
+  "1": "angles",
+  "2": "endPos",
+  "3": "hit",
+  "4": "speed"
+ },
+ "fire_wave_strike": {
+  "1": "hitType",
+  "2": "endPosition"
+ },
+ "fireburst_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "fissure_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "fist_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "fix_ring_and_return": {
+  "1": "player"
+ },
+ "flamejet_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "float_to_percent": {
+  "1": "fraction"
+ },
+ "forget_spell": {
+  "1": "owner",
+  "2": "potionId"
+ },
+ "format_time": {
+  "1": "hour",
+  "2": "minute"
+ },
+ "free_bank_looper": {
+  "1": "targetPlayer",
+  "2": "bankItem"
+ },
+ "freeze_area": {
+  "1": "freezePosition"
+ },
+ "freeze_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "freeze_solid_end": {
+  "1": "unfrozeEarly"
+ },
+ "freeze_solid_start": {
+  "1": "freezeDuration",
+  "2": "attacker"
+ },
+ "frock_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "fsorc_wait": {
+  "1": "waitPosition"
+ },
+ "fsorc_zombie_alert": {
+  "1": "zombie"
+ },
+ "func_check_ammo_strings": {
+  "1": "scriptName"
+ },
+ "func_check_bank_has": {
+  "1": "playerId",
+  "2": "itemScript"
+ },
+ "func_check_failure": {
+  "1": "playerId",
+  "2": "itemId"
+ },
+ "func_dyns_test_point": {
+  "1": "teleportPoint"
+ },
+ "func_filter_items": {
+  "1": "playerId",
+  "2": "itemIds"
+ },
+ "func_filter_targs": {
+  "1": "target"
+ },
+ "func_get_dualwield_reduct": {
+  "1": "weaponScript"
+ },
+ "func_get_free_bank": {
+  "1": "playerId",
+  "2": "itemId"
+ },
+ "func_get_ray_target": {
+  "1": "player",
+  "2": "range"
+ },
+ "func_get_stored_quantity": {
+  "1": "bankData",
+  "2": "idx"
+ },
+ "func_guilds_leading": {
+  "1": "player"
+ },
+ "func_inrange": {
+  "1": "numberToCheck",
+  "2": "base",
+  "3": "range"
+ },
+ "func_is_ent": {
+  "1": "value"
+ },
+ "func_make_store_string": {
+  "1": "player"
+ },
+ "func_make_string": {
+  "1": "itemEntity"
+ },
+ "func_param_isnum": {
+  "1": "value"
+ },
+ "func_replace_string": {
+  "1": "sourceText",
+  "2": "searchText",
+  "3": "replaceText"
+ },
+ "func_stack_quantity": {
+  "1": "bankData",
+  "2": "itemString"
+ },
+ "fx_smith_effect": {
+  "1": "effectType",
+  "2": "darkSprite",
+  "3": "iceSprite"
+ },
+ "fx_spark": {
+  "1": "sparkPosition"
+ },
+ "fx_stunburst_go_cl": {
+  "1": "stunPosition",
+  "2": "stunRadius"
+ },
+ "game_activate": {
+  "5": "extraValue5",
+  "6": "falloff",
+  "1": "duration",
+  "2": "amount",
+  "3": "damage",
+  "4": "skill"
+ },
+ "game_applyeffect": {
+  "1": "applyMode",
+  "2": "target",
+  "3": "effectScript",
+  "4": "value",
+  "5": "attacker",
+  "6": "value2",
+  "7": "value3",
+  "8": "value4",
+  "9": "value5"
+ },
+ "game_arrowmenu": {
+  "1": "timeLastOpened",
+  "2": "selectedArrow"
+ },
+ "game_attempt_unlock": {
+  "1": "player"
+ },
+ "game_cl_playsound": {
+  "1": "value",
+  "2": "volume",
+  "3": "soundFile",
+  "4": "position"
+ },
+ "game_confirm_buy": {
+  "1": "player",
+  "2": "shopItemName",
+  "3": "scriptName",
+  "4": "skillType",
+  "5": "stat"
+ },
+ "game_container_addeditem": {
+  "1": "item"
+ },
+ "game_container_gaveitem": {
+  "1": "item"
+ },
+ "game_container_removeditem": {
+  "1": "item"
+ },
+ "game_death": {
+  "1": "attacker",
+  "2": "extraValue2",
+  "3": "extraValue3",
+  "4": "extraValue4"
+ },
+ "game_drain_death": {
+  "1": "drainer"
+ },
+ "game_dynamically_Created": {
+  "1": "owner"
+ },
+ "game_dynamically_created": {
+  "5": "extraValue5",
+  "6": "extraValue6",
+  "7": "alwaysPush",
+  "8": "duration",
+  "9": "extraValue9",
+  "1": "creatorValue1",
+  "2": "creatorValue2",
+  "3": "damage",
+  "4": "skill"
+ },
+ "game_equipped": {
+  "1": "item"
+ },
+ "game_gave_gold": {
+  "1": "player"
+ },
+ "game_get_spawns": {
+  "1": "spawnPoints"
+ },
+ "game_hitbodypart": {
+  "1": "bodyPart"
+ },
+ "game_leapback": {
+  "1": "stamina"
+ },
+ "game_leapleft": {
+  "1": "stamina"
+ },
+ "game_leapright": {
+  "1": "stamina"
+ },
+ "game_monsterspawn_removed": {
+  "1": "spawn"
+ },
+ "game_newlevel": {
+  "1": "mapName"
+ },
+ "game_party_join": {
+  "1": "partyName"
+ },
+ "game_player_got_from_store": {
+  "1": "item",
+  "2": "vendor"
+ },
+ "game_playercmd": {
+  "1": "command",
+  "2": "argument",
+  "3": "argument2",
+  "4": "voteOption",
+  "5": "voteOption2",
+  "6": "voteOption3",
+  "7": "voteOption4",
+  "8": "value",
+  "9": "value2"
+ },
+ "game_playerjoin": {
+  "1": "player"
+ },
+ "game_playerleave": {
+  "1": "player"
+ },
+ "game_playerspeak": {
+  "1": "player",
+  "2": "chatType",
+  "3": "text"
+ },
+ "game_recvoffer_item": {
+  "1": "itemScript"
+ },
+ "game_scriptflag_update": {
+  "1": "action",
+  "2": "flagName",
+  "3": "flagType",
+  "4": "value",
+  "5": "baseExpireTime"
+ },
+ "game_set_weather": {
+  "1": "weatherType",
+  "2": "lock"
+ },
+ "game_setchargepercent": {
+  "1": "chargePercent"
+ },
+ "game_show": {
+  "1": "raceType",
+  "2": "genderType",
+  "3": "debugFlag"
+ },
+ "game_spawn": {
+  "1": "playerRace",
+  "2": "playerGender"
+ },
+ "game_struck": {
+  "2": "extraValue2",
+  "3": "extraValue3",
+  "4": "extraValue4"
+ },
+ "game_touch": {
+  "2": "hpRange",
+  "3": "effectDamage"
+ },
+ "game_touched_local_trans": {
+  "1": "transTitle",
+  "2": "transId",
+  "3": "reqAllPlayers",
+  "4": "mins",
+  "5": "maxs",
+  "6": "respawnName"
+ },
+ "game_transition_entered": {
+  "1": "transDesc",
+  "2": "destMap",
+  "3": "localSpawn",
+  "4": "destSpawn"
+ },
+ "game_transition_triggered": {
+  "1": "transDesc",
+  "2": "destMap",
+  "3": "localSpawn",
+  "4": "destSpawn"
+ },
+ "game_triggered": {
+  "1": "triggerName"
+ },
+ "game_used": {
+  "1": "user",
+  "2": "target",
+  "3": "value",
+  "4": "value2"
+ },
+ "game_viewanimdone": {
+  "1": "value"
+ },
+ "game_vote_end": {
+  "1": "voteType",
+  "2": "player",
+  "3": "outcome",
+  "4": "voteData"
+ },
+ "gaunt_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "gave_claw": {
+  "1": "winner"
+ },
+ "gave_head": {
+  "1": "winner"
+ },
+ "gave_ring": {
+  "1": "ringBearer"
+ },
+ "gave_shard": {
+  "1": "winner"
+ },
+ "get_beam": {
+  "1": "prop"
+ },
+ "get_quest_participants_loop": {
+  "1": "participants"
+ },
+ "get_type": {
+  "1": "chance1",
+  "2": "chance2",
+  "3": "chance3"
+ },
+ "getquest": {
+  "1": "quest"
+ },
+ "gib_dodamage": {
+  "1": "flag",
+  "2": "target",
+  "3": "value",
+  "4": "value2",
+  "5": "value3",
+  "6": "flag2"
+ },
+ "give_book": {
+  "1": "completer"
+ },
+ "give_crest": {
+  "1": "player",
+  "2": "crestScript"
+ },
+ "give_deed": {
+  "1": "winner"
+ },
+ "give_hat": {
+  "1": "winner"
+ },
+ "give_hp": {
+  "1": "amount"
+ },
+ "give_item": {
+  "1": "giver",
+  "2": "itemString",
+  "3": "offerParams"
+ },
+ "give_item_delayed": {
+  "1": "target",
+  "2": "itemName",
+  "3": "delay"
+ },
+ "give_item_idx": {
+  "1": "targetIndex",
+  "2": "itemString",
+  "3": "offerParams"
+ },
+ "give_letter": {
+  "1": "winner"
+ },
+ "give_mace": {
+  "1": "winner"
+ },
+ "give_manuscript": {
+  "1": "completer"
+ },
+ "give_mead": {
+  "1": "player"
+ },
+ "give_mp": {
+  "1": "amount"
+ },
+ "give_picture": {
+  "1": "player"
+ },
+ "give_reward": {
+  "1": "player"
+ },
+ "give_reward_final": {
+  "1": "player",
+  "2": "reward"
+ },
+ "give_reward_options": {
+  "1": "player"
+ },
+ "give_runaround": {
+  "1": "player",
+  "2": "questStep"
+ },
+ "give_selected_reward": {
+  "1": "player",
+  "2": "rewardIndex"
+ },
+ "give_soup": {
+  "1": "player"
+ },
+ "give_ticket": {
+  "1": "boltType"
+ },
+ "glob_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "glow_custom": {
+  "1": "glow"
+ },
+ "glow_done": {
+  "1": "glowType"
+ },
+ "glow_toggle": {
+  "1": "flag"
+ },
+ "gm_add_del_que": {
+  "1": "targetId",
+  "2": "delayBeforeFade"
+ },
+ "gm_add_maldora_fragment": {
+  "1": "playerId"
+ },
+ "gm_add_map_player": {
+  "1": "playerId"
+ },
+ "gm_april_fools_spawn_add": {
+  "1": "location"
+ },
+ "gm_boost": {
+  "1": "target",
+  "2": "velocity",
+  "3": "flag"
+ },
+ "gm_create_vote": {
+  "1": "callerEvent",
+  "2": "voteOptions",
+  "3": "title",
+  "4": "description",
+  "5": "silent"
+ },
+ "gm_createitem": {
+  "1": "delay",
+  "2": "item",
+  "3": "position",
+  "4": "reserve"
+ },
+ "gm_createnpc": {
+  "1": "delay",
+  "2": "npcScript",
+  "3": "position",
+  "4": "ownerId",
+  "5": "value",
+  "6": "damageMulti",
+  "7": "healthMulti",
+  "8": "value2",
+  "9": "value3"
+ },
+ "gm_createnpc2": {
+  "1": "delay",
+  "2": "childScript",
+  "3": "spawnOffset",
+  "4": "moveDest",
+  "5": "killerId",
+  "6": "damageMulti",
+  "7": "healthMulti",
+  "8": "value2",
+  "9": "value3"
+ },
+ "gm_createnpc3": {
+  "1": "delay",
+  "2": "childScript",
+  "3": "spawnOffset",
+  "4": "moveDest",
+  "5": "killerId",
+  "6": "damageMulti",
+  "7": "healthMulti",
+  "8": "value2",
+  "9": "value3"
+ },
+ "gm_createnpc4": {
+  "1": "delay",
+  "2": "childScript",
+  "3": "spawnOffset",
+  "4": "moveDest",
+  "5": "killerId",
+  "6": "damageMulti",
+  "7": "healthMulti",
+  "8": "value2",
+  "9": "value3"
+ },
+ "gm_crit_npc_died": {
+  "1": "npc",
+  "2": "killerId"
+ },
+ "gm_crys_key_activate": {
+  "1": "player",
+  "2": "keyNumber"
+ },
+ "gm_dodamage": {
+  "1": "target",
+  "2": "damageMode",
+  "3": "damage",
+  "4": "damageType",
+  "5": "attacker",
+  "6": "damageKind",
+  "7": "flag",
+  "8": "reflector"
+ },
+ "gm_dq_add_counter": {
+  "1": "callbackId"
+ },
+ "gm_dq_add_death": {
+  "2": "monsterOrigin"
+ },
+ "gm_dq_perish_counter": {
+  "1": "callbackId"
+ },
+ "gm_drop_item": {
+  "1": "delay",
+  "2": "itemScriptName",
+  "3": "origin",
+  "4": "reserveForStrongest"
+ },
+ "gm_fade": {
+  "1": "target",
+  "2": "renderMode",
+  "3": "fadeAmount"
+ },
+ "gm_fade_in": {
+  "1": "target",
+  "2": "renderMode"
+ },
+ "gm_find_top_players": {
+  "1": "maxPlayers"
+ },
+ "gm_got_no_vote": {
+  "1": "player"
+ },
+ "gm_got_yes_vote": {
+  "1": "player"
+ },
+ "gm_gvote_count": {
+  "1": "voterId",
+  "2": "optionData"
+ },
+ "gm_hollow_one_died": {
+  "1": "position"
+ },
+ "gm_keldorn_troll": {
+  "1": "player"
+ },
+ "gm_light_update": {
+  "1": "lightAction",
+  "2": "ownerIndex",
+  "3": "lightColor",
+  "4": "radius"
+ },
+ "gm_lights_sync": {
+  "1": "ownerId"
+ },
+ "gm_manual_map_change": {
+  "1": "map",
+  "2": "spawnPoint"
+ },
+ "gm_map_m2_quest_setmusic": {
+  "1": "target"
+ },
+ "gm_ms_text": {
+  "1": "npcName",
+  "2": "message"
+ },
+ "gm_nash_cryskey_found": {
+  "1": "player"
+ },
+ "gm_nash_tear": {
+  "1": "player"
+ },
+ "gm_newweather_string": {
+  "1": "value",
+  "2": "weatherType",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4"
+ },
+ "gm_orcfor_sham_start": {
+  "1": "player"
+ },
+ "gm_recieve_client_info": {
+  "1": "clientInfo"
+ },
+ "gm_say": {
+  "1": "message"
+ },
+ "gm_set_sorc_point": {
+  "1": "origin"
+ },
+ "gm_set_weather": {
+  "1": "weatherType",
+  "2": "lock"
+ },
+ "gm_setname": {
+  "1": "newName"
+ },
+ "gm_shender_east_bunny": {
+  "1": "player"
+ },
+ "gm_soccer_blue_toggle": {
+  "1": "player"
+ },
+ "gm_soccer_red_toggle": {
+  "1": "player"
+ },
+ "gm_sorcv_give_medal": {
+  "1": "player"
+ },
+ "gm_sorcv_ogers": {
+  "1": "inHole"
+ },
+ "gm_start_weather": {
+  "1": "weatherType"
+ },
+ "gm_suspend_mob_spawns": {
+  "1": "disableSpawns"
+ },
+ "gm_sxbow_swap": {
+  "1": "receiver"
+ },
+ "gm_test_trig": {
+  "1": "entity",
+  "2": "text",
+  "3": "text2",
+  "4": "text3",
+  "5": "text4"
+ },
+ "gm_top_players_reset": {
+  "1": "loopLimit"
+ },
+ "gm_trig_filter": {
+  "1": "triggerName",
+  "2": "tripper",
+  "3": "tokens"
+ },
+ "gm_trigger_hpseq": {
+  "1": "caller",
+  "2": "triggerPrefix",
+  "3": "hpRequirement",
+  "4": "hpRequirement2",
+  "5": "hpRequirement3",
+  "6": "hpRequirement4",
+  "7": "hpRequirement5",
+  "8": "hpRequirement6",
+  "9": "hpRequirement7"
+ },
+ "gm_trigger_hpseq_count": {
+  "1": "ignored",
+  "2": "triggerName"
+ },
+ "gm_vanish_que": {
+  "1": "targetId",
+  "2": "vanishDelay"
+ },
+ "gm_voteban": {
+  "1": "target",
+  "2": "caller"
+ },
+ "gm_votekick": {
+  "1": "target",
+  "2": "caller"
+ },
+ "gm_votelock": {
+  "1": "optionTitle",
+  "2": "lock"
+ },
+ "gm_votemap": {
+  "1": "optionTitle",
+  "2": "mapDestination"
+ },
+ "gm_votepvp": {
+  "1": "optionTitle",
+  "2": "pvpEnabled"
+ },
+ "gm_worm_gold": {
+  "1": "worm",
+  "2": "itemName"
+ },
+ "gob_hop_zdiff": {
+  "1": "verticalDifference"
+ },
+ "gob_leap_away": {
+  "1": "target"
+ },
+ "goblin_set_weapon": {
+  "1": "weaponType"
+ },
+ "going_home": {
+  "1": "phase"
+ },
+ "gold_spew": {
+  "1": "goldPerBag",
+  "2": "bagsPerPlayer",
+  "3": "distance",
+  "4": "minimumBags",
+  "5": "maximumBags",
+  "6": "position"
+ },
+ "got_crystal": {
+  "1": "giver"
+ },
+ "got_head1": {
+  "1": "player"
+ },
+ "got_head2": {
+  "1": "player"
+ },
+ "got_head3": {
+  "1": "player"
+ },
+ "got_head4": {
+  "1": "player"
+ },
+ "got_letter": {
+  "1": "player"
+ },
+ "got_ring": {
+  "1": "player"
+ },
+ "got_theif_map": {
+  "1": "player"
+ },
+ "gouge_strike": {
+  "1": "value",
+  "2": "value2",
+  "3": "target"
+ },
+ "grab_fx": {
+  "1": "target"
+ },
+ "hand_powerup": {
+  "1": "handIndex"
+ },
+ "hand_sprite": {
+  "1": "angle",
+  "2": "handSide"
+ },
+ "handmagic_connecthands": {
+  "1": "flag"
+ },
+ "handmagic_createbeam": {
+  "1": "leftBone",
+  "2": "rightBone"
+ },
+ "handmagic_createbeam_to_sky": {
+  "1": "fingerBone"
+ },
+ "handmagic_righthand": {
+  "1": "flag"
+ },
+ "hbutt_damaged_other": {
+  "1": "target"
+ },
+ "hbutt_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "heal_target": {
+  "1": "target",
+  "2": "amount",
+  "3": "gaveDamagePoints"
+ },
+ "healthbar_toggle": {
+  "1": "displayMode"
+ },
+ "helena_bandit_chest": {
+  "1": "position"
+ },
+ "helena_flee": {
+  "1": "attacker"
+ },
+ "help_vendor_magic": {
+  "1": "player"
+ },
+ "hide_body_parts": {
+  "1": "bodyParts"
+ },
+ "hired_by_player": {
+  "1": "player"
+ },
+ "holywave_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "ice_spikes": {
+  "1": "position"
+ },
+ "inflict_bleed": {
+  "1": "target"
+ },
+ "item_debug2": {
+  "1": "caller",
+  "2": "debugKind",
+  "3": "debugSource",
+  "4": "debugKey"
+ },
+ "item_demon_rage": {
+  "1": "item",
+  "2": "player",
+  "3": "maximumUses"
+ },
+ "item_detected": {
+  "1": "player"
+ },
+ "itemtook": {
+  "1": "player"
+ },
+ "jump_done": {
+  "1": "npc"
+ },
+ "ke_beam_on": {
+  "1": "target",
+  "2": "height"
+ },
+ "key_blue": {
+  "1": "player"
+ },
+ "key_brass": {
+  "1": "player"
+ },
+ "key_forged": {
+  "1": "player"
+ },
+ "key_gold": {
+  "1": "player"
+ },
+ "key_green": {
+  "1": "player"
+ },
+ "key_ice": {
+  "1": "player"
+ },
+ "key_red": {
+  "1": "player"
+ },
+ "key_skeleton": {
+  "1": "player"
+ },
+ "key_status": {
+  "1": "forwardKey",
+  "2": "backwardKey",
+  "3": "leftKey",
+  "4": "rightKey",
+  "5": "viewAngles",
+  "6": "flag"
+ },
+ "key_treasury": {
+  "1": "player"
+ },
+ "key_used": {
+  "1": "playerId"
+ },
+ "kh_dragon_death": {
+  "1": "position"
+ },
+ "kh_fire_breath_on": {
+  "1": "sprite"
+ },
+ "kh_flight_sprites": {
+  "1": "enabled"
+ },
+ "kh_hand_sprites": {
+  "1": "duration",
+  "2": "color"
+ },
+ "kh_ice_spikes": {
+  "1": "spawnPosition"
+ },
+ "kh_make_drain_sprite": {
+  "1": "spawnPosition",
+  "2": "index",
+  "3": "drainerAngles",
+  "4": "draining"
+ },
+ "kh_make_row": {
+  "1": "row"
+ },
+ "kh_mirror_update": {
+  "1": "angleOffset"
+ },
+ "kh_poison_breath_on": {
+  "1": "sprite"
+ },
+ "kh_setup": {
+  "1": "owner"
+ },
+ "kh_spawn_mirrors": {
+  "1": "model",
+  "2": "origin",
+  "3": "angles"
+ },
+ "kh_sprite_splode": {
+  "1": "origin"
+ },
+ "kh_zap_target_on": {
+  "1": "target"
+ },
+ "kick_dodamage": {
+  "1": "didHit",
+  "2": "target"
+ },
+ "knockleft_dodamage": {
+  "1": "didHit",
+  "2": "target"
+ },
+ "latch_onto": {
+  "1": "target"
+ },
+ "latch_target": {
+  "1": "target"
+ },
+ "leap_at": {
+  "1": "target"
+ },
+ "leap_away": {
+  "1": "target"
+ },
+ "light_grow": {
+  "1": "desiredRadius",
+  "2": "speed"
+ },
+ "light_shrink": {
+  "1": "desiredRadius",
+  "2": "speed"
+ },
+ "lighten": {
+  "1": "fireDamage",
+  "2": "gravity"
+ },
+ "list_tickets": {
+  "1": "text",
+  "2": "filterText"
+ },
+ "load_waypoint": {
+  "1": "value",
+  "2": "pointIndex"
+ },
+ "lock_tod": {
+  "1": "timeToLock"
+ },
+ "long_jump_done": {
+  "1": "npc"
+ },
+ "longatk_dodamage": {
+  "1": "didHit",
+  "2": "target"
+ },
+ "loop_guilds_leading": {
+  "1": "callerSteamId"
+ },
+ "lshield_activate": {
+  "1": "duration"
+ },
+ "lshield_on": {
+  "1": "timeOn"
+ },
+ "lshield_start_cl_fx": {
+  "1": "delay"
+ },
+ "make_bag": {
+  "1": "spawnPosition",
+  "2": "goldAmount"
+ },
+ "make_cloud": {
+  "1": "origin",
+  "2": "angles"
+ },
+ "make_clouds": {
+  "1": "startOrigin",
+  "2": "angles"
+ },
+ "make_gaxe": {
+  "1": "target"
+ },
+ "make_sprite_1": {
+  "1": "bonePosition"
+ },
+ "makefire_loop": {
+  "1": "firePosition"
+ },
+ "maldora_final_died": {
+  "1": "killer"
+ },
+ "maldoraf_died": {
+  "1": "killer"
+ },
+ "manaring_toggle": {
+  "1": "equipped"
+ },
+ "manual_start": {
+  "1": "raid"
+ },
+ "map_validated": {
+  "1": "status"
+ },
+ "mayorq_done": {
+  "1": "player"
+ },
+ "me_pouncie": {
+  "1": "firstTarget"
+ },
+ "mele_attack": {
+  "1": "didHit"
+ },
+ "melee_damaged_other": {
+  "1": "targetHit",
+  "2": "damage"
+ },
+ "melee_strike": {
+  "1": "hitKind",
+  "2": "endPosition",
+  "3": "target",
+  "4": "flag"
+ },
+ "menu_faster": {
+  "1": "target"
+ },
+ "menu_faster_all": {
+  "1": "target"
+ },
+ "menu_get_soup": {
+  "1": "player"
+ },
+ "menu_help": {
+  "1": "player"
+ },
+ "menu_hunt": {
+  "1": "npc"
+ },
+ "menu_normal": {
+  "1": "target"
+ },
+ "menu_normal_all": {
+  "1": "target"
+ },
+ "menu_recv_payment": {
+  "1": "player"
+ },
+ "menu_recv_payment_failed": {
+  "1": "player"
+ },
+ "menu_remove": {
+  "1": "target"
+ },
+ "menu_remove_by_idx": {
+  "1": "target",
+  "2": "summonIndex"
+ },
+ "menu_remove_specific": {
+  "1": "target"
+ },
+ "menu_slower": {
+  "1": "target"
+ },
+ "menu_slower_all": {
+  "1": "target"
+ },
+ "menu_summon": {
+  "1": "target"
+ },
+ "menu_summon_script": {
+  "1": "target",
+  "2": "summonScript"
+ },
+ "menu_switch_towns": {
+  "1": "playerId"
+ },
+ "mighty_blow_dodamage": {
+  "1": "didHit",
+  "2": "target"
+ },
+ "move_away": {
+  "1": "reason"
+ },
+ "move_in": {
+  "1": "reason"
+ },
+ "move_type": {
+  "1": "cautious"
+ },
+ "mp3": {
+  "1": "target",
+  "2": "mode",
+  "3": "file"
+ },
+ "mummy_beam_new_target": {
+  "1": "target"
+ },
+ "mummy_force_eat_mode": {
+  "1": "mode"
+ },
+ "mummy_force_squat_mode": {
+  "1": "mode"
+ },
+ "my_target_died": {
+  "1": "offender"
+ },
+ "needle_dodamage": {
+  "1": "didHit"
+ },
+ "new_cast": {
+  "1": "caster"
+ },
+ "newdyn": {
+  "1": "npcIndex",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "newitem": {
+  "1": "itemScriptname",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "newnpc": {
+  "1": "scriptname",
+  "2": "value",
+  "3": "value2",
+  "4": "value3",
+  "5": "value4",
+  "6": "value5",
+  "7": "value6",
+  "8": "value7"
+ },
+ "newtype_remove_pet": {
+  "1": "died"
+ },
+ "no_balls": {
+  "1": "player"
+ },
+ "normswing_dodamage": {
+  "1": "didHit",
+  "2": "target"
+ },
+ "note_hundred": {
+  "1": "player"
+ },
+ "note_ten": {
+  "1": "player"
+ },
+ "npc_aiding_ally": {
+  "1": "allyToAid",
+  "2": "caller"
+ },
+ "npc_bs_struck": {
+  "1": "attacker"
+ },
+ "npc_chat_was_busy": {
+  "1": "status"
+ },
+ "npc_flinch": {
+  "1": "damage"
+ },
+ "npc_found_new_target": {
+  "1": "target"
+ },
+ "npc_spawn": {
+  "1": "npc"
+ },
+ "npc_struck": {
+  "1": "damage"
+ },
+ "npc_suicide": {
+  "1": "suicideMode"
+ },
+ "npc_targetsighted": {
+  "1": "target"
+ },
+ "npc_targetvalidate": {
+  "1": "target"
+ },
+ "npcatk_alert_all_allies": {
+  "1": "attacker"
+ },
+ "npcatk_ally_alert": {
+  "1": "attacker",
+  "2": "allyToAid"
+ },
+ "npcatk_check_for_victory": {
+  "1": "target"
+ },
+ "npcatk_checkflinch": {
+  "1": "incomingDamage"
+ },
+ "npcatk_chicken_run": {
+  "1": "value",
+  "2": "value2"
+ },
+ "npcatk_chickenrun": {
+  "1": "value",
+  "2": "value2"
+ },
+ "npcatk_clear_targets": {
+  "1": "reason"
+ },
+ "npcatk_do_events_isnum": {
+  "1": "text"
+ },
+ "npcatk_dodamage": {
+  "1": "target",
+  "2": "hitRange",
+  "3": "damage",
+  "4": "hitChance",
+  "5": "damageSource",
+  "6": "reflective",
+  "7": "value"
+ },
+ "npcatk_faceattacker": {
+  "1": "target"
+ },
+ "npcatk_find_distant": {
+  "1": "maxRange"
+ },
+ "npcatk_flank": {
+  "1": "target"
+ },
+ "npcatk_flee": {
+  "1": "threatEntity",
+  "2": "fleeDistance",
+  "3": "fleeDuration"
+ },
+ "npcatk_jump": {
+  "1": "verticalDifference"
+ },
+ "npcatk_prox_activated": {
+  "1": "player",
+  "2": "reason"
+ },
+ "npcatk_resume_ai": {
+  "1": "target"
+ },
+ "npcatk_setmovedest": {
+  "1": "destination",
+  "2": "range"
+ },
+ "npcatk_settarget": {
+  "1": "target",
+  "2": "debug"
+ },
+ "npcatk_suspend_ai": {
+  "1": "seconds",
+  "2": "debugTag"
+ },
+ "npcatk_suspend_attack": {
+  "1": "time"
+ },
+ "npcatk_suspend_movement": {
+  "1": "idleAnim",
+  "2": "duration"
+ },
+ "npcatk_suspend_roam": {
+  "1": "delay"
+ },
+ "npcatk_target": {
+  "1": "target",
+  "2": "debug"
+ },
+ "npcatk_targetvalidate": {
+  "1": "target"
+ },
+ "npcatk_validatetarget": {
+  "1": "target"
+ },
+ "npcatk_vanish": {
+  "1": "time"
+ },
+ "npcexp_reset_skills": {
+  "1": "playerIndex"
+ },
+ "npcreact_targetsighted": {
+  "1": "player"
+ },
+ "offer_basic_reward": {
+  "1": "winner"
+ },
+ "offer_felewyn_symbol": {
+  "1": "chance"
+ },
+ "open_betabank": {
+  "1": "bankUser"
+ },
+ "open_portal": {
+  "1": "customer"
+ },
+ "pbolt_cloud_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "phlames_viewfinder_on": {
+  "1": "owner"
+ },
+ "pick_player_inrange": {
+  "1": "range"
+ },
+ "player_accept": {
+  "1": "player"
+ },
+ "player_hitgroundhard": {
+  "1": "downVelocity"
+ },
+ "player_joined": {
+  "1": "player"
+ },
+ "player_left": {
+  "1": "player"
+ },
+ "player_votelock": {
+  "1": "caller"
+ },
+ "player_votemap": {
+  "1": "caller",
+  "2": "mapName"
+ },
+ "player_votepvp": {
+  "1": "caller"
+ },
+ "plr_add_dark": {
+  "1": "amount"
+ },
+ "plr_change_speed": {
+  "1": "duration",
+  "2": "speedRatio",
+  "3": "tag"
+ },
+ "plr_menu_emote": {
+  "1": "value",
+  "2": "text"
+ },
+ "plr_update_speed_client": {
+  "1": "moveScale"
+ },
+ "plr_update_speed_effects": {
+  "1": "mode",
+  "2": "effectTag"
+ },
+ "poison_storm_on": {
+  "1": "groundPos"
+ },
+ "pole_adjust_damage": {
+  "1": "target",
+  "2": "damageDone"
+ },
+ "pole_attack": {
+  "1": "attackType"
+ },
+ "pole_backhand_special": {
+  "1": "target"
+ },
+ "pole_poke1_enhance": {
+  "1": "hitTarget"
+ },
+ "pole_suspend_idle_cl": {
+  "1": "time"
+ },
+ "pole_toggle_idle_cl": {
+  "1": "holdIdle"
+ },
+ "poof_fx": {
+  "1": "spriteCenter"
+ },
+ "poopy_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "potion_regen": {
+  "1": "duration"
+ },
+ "potion_vampire": {
+  "1": "duration"
+ },
+ "proj_dodamage": {
+  "1": "hit",
+  "2": "target",
+  "3": "value",
+  "4": "value2"
+ },
+ "push_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "push_loop_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "push_out": {
+  "1": "target"
+ },
+ "pushatk_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "quest_activate": {
+  "1": "menuOwner"
+ },
+ "quest_activate_check": {
+  "1": "playerId"
+ },
+ "quest_boar_done": {
+  "1": "target"
+ },
+ "quest_complete": {
+  "1": "questPlayer"
+ },
+ "quest_intro_check": {
+  "1": "playerId"
+ },
+ "quest_ledger_done": {
+  "1": "winner"
+ },
+ "quest_letter_done": {
+  "1": "target"
+ },
+ "quest_log_done": {
+  "1": "target"
+ },
+ "quest_reward": {
+  "1": "rewardPlayer"
+ },
+ "rapid_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "re_scale": {
+  "1": "ratio",
+  "2": "noBoundingFix",
+  "3": "noRangeFix"
+ },
+ "reachswing_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "rebuke_rebuker": {
+  "1": "target"
+ },
+ "recharge_fx": {
+  "1": "chargerOrigin"
+ },
+ "recv_time": {
+  "1": "hour",
+  "2": "minute",
+  "3": "timeText"
+ },
+ "redeem_ticket": {
+  "1": "customerId",
+  "2": "returnItem"
+ },
+ "register_body": {
+  "1": "body",
+  "2": "clientBody"
+ },
+ "reject_looper": {
+  "1": "itemIndex"
+ },
+ "remove_me": {
+  "1": "caller"
+ },
+ "remove_projectile": {
+  "1": "fxIndex"
+ },
+ "repel_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "repel_target": {
+  "1": "target",
+  "2": "strength",
+  "3": "fromOrigin"
+ },
+ "repell_burst": {
+  "1": "burstOrigin",
+  "2": "radius",
+  "3": "forceBurst"
+ },
+ "report_failed": {
+  "1": "reportLevel"
+ },
+ "reserve_test": {
+  "1": "targetPlayer"
+ },
+ "reset_ball": {
+  "1": "player"
+ },
+ "reset_scores": {
+  "1": "player"
+ },
+ "reset_sorcs": {
+  "1": "player"
+ },
+ "return_coffer": {
+  "1": "player"
+ },
+ "return_throw": {
+  "1": "reason"
+ },
+ "return_ticket": {
+  "1": "user",
+  "2": "storeItem"
+ },
+ "return_to_owner": {
+  "1": "value"
+ },
+ "reward_crystal": {
+  "1": "winner"
+ },
+ "reward_food": {
+  "1": "winner"
+ },
+ "reward_grave": {
+  "1": "winner"
+ },
+ "reward_random_item": {
+  "1": "winner"
+ },
+ "reward_spider": {
+  "1": "winner"
+ },
+ "rock_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "roll_die": {
+  "1": "sides"
+ },
+ "run_away": {
+  "1": "threatEntity",
+  "2": "fleeDistance"
+ },
+ "s_test": {
+  "1": "range",
+  "2": "scanFlags"
+ },
+ "save_waypoint": {
+  "1": "value",
+  "2": "waypointName"
+ },
+ "say_accept": {
+  "1": "player"
+ },
+ "say_ale": {
+  "1": "player"
+ },
+ "say_axe": {
+  "1": "speaker"
+ },
+ "say_axes_df": {
+  "1": "customer"
+ },
+ "say_axes_ss": {
+  "1": "customer"
+ },
+ "say_blunt_db": {
+  "1": "customer"
+ },
+ "say_blunt_gauntlet_ic": {
+  "1": "customer"
+ },
+ "say_crystal": {
+  "1": "speaker"
+ },
+ "say_curse": {
+  "1": "player"
+ },
+ "say_dagger": {
+  "1": "player"
+ },
+ "say_deralia": {
+  "1": "talkingPlayer"
+ },
+ "say_edana": {
+  "1": "talkingPlayer"
+ },
+ "say_food": {
+  "1": "speaker"
+ },
+ "say_forest": {
+  "1": "speaker"
+ },
+ "say_forge": {
+  "1": "speaker"
+ },
+ "say_forge_weapons": {
+  "1": "target"
+ },
+ "say_gatecity": {
+  "1": "talkingPlayer"
+ },
+ "say_gotgold": {
+  "1": "target"
+ },
+ "say_grave": {
+  "1": "speaker"
+ },
+ "say_helena": {
+  "1": "talkingPlayer"
+ },
+ "say_help": {
+  "1": "talkingPlayer"
+ },
+ "say_hi": {
+  "1": "talkingPlayer"
+ },
+ "say_job": {
+  "1": "player"
+ },
+ "say_job2": {
+  "1": "target"
+ },
+ "say_kayle": {
+  "1": "talkingPlayer"
+ },
+ "say_letter": {
+  "1": "speaker"
+ },
+ "say_no": {
+  "1": "player"
+ },
+ "say_ok": {
+  "1": "speaker"
+ },
+ "say_ore": {
+  "1": "target"
+ },
+ "say_priest": {
+  "1": "speaker"
+ },
+ "say_reward": {
+  "1": "player"
+ },
+ "say_rumor": {
+  "1": "talkingPlayer"
+ },
+ "say_rumour": {
+  "1": "speaker"
+ },
+ "say_sewer": {
+  "1": "target"
+ },
+ "say_smallarms_vt": {
+  "1": "customer"
+ },
+ "say_spider": {
+  "1": "speaker"
+ },
+ "say_sword": {
+  "1": "target"
+ },
+ "say_swords_sf": {
+  "1": "customer"
+ },
+ "say_swords_ub": {
+  "1": "customer"
+ },
+ "say_torch": {
+  "1": "recipient"
+ },
+ "say_town": {
+  "1": "target"
+ },
+ "say_weapon_desc": {
+  "1": "value",
+  "2": "skillType"
+ },
+ "say_weapons": {
+  "1": "player"
+ },
+ "say_yes": {
+  "1": "player"
+ },
+ "scan_target": {
+  "1": "origin"
+ },
+ "scarab_set_target": {
+  "1": "target"
+ },
+ "seal_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "send_damage": {
+  "1": "target",
+  "2": "mode",
+  "3": "damage",
+  "4": "percent",
+  "5": "attacker",
+  "6": "effect",
+  "7": "flags"
+ },
+ "set_afflict_dmg": {
+  "1": "value",
+  "2": "damage"
+ },
+ "set_afflict_duration": {
+  "1": "value",
+  "2": "duration"
+ },
+ "set_afflict_type": {
+  "1": "value",
+  "2": "afflictType"
+ },
+ "set_affliction": {
+  "1": "dmgType",
+  "2": "duration",
+  "3": "dmg"
+ },
+ "set_ally_targets": {
+  "1": "target"
+ },
+ "set_ammo": {
+  "1": "ammoType"
+ },
+ "set_anims_double": {
+  "1": "skipIdle"
+ },
+ "set_anims_single": {
+  "1": "skipIdle"
+ },
+ "set_aoe": {
+  "1": "aoeRadius"
+ },
+ "set_bbox": {
+  "1": "bboxMins",
+  "2": "bboxMaxs"
+ },
+ "set_beam_type": {
+  "1": "beamType",
+  "2": "beamMode"
+ },
+ "set_bouncy": {
+  "1": "target",
+  "2": "enabled"
+ },
+ "set_cadj": {
+  "1": "ratio"
+ },
+ "set_cbm": {
+  "1": "musicFile"
+ },
+ "set_cbm_file": {
+  "1": "musicFile"
+ },
+ "set_chance_haspick": {
+  "1": "chance"
+ },
+ "set_chance_trapped": {
+  "1": "chance"
+ },
+ "set_cl_gender_race": {
+  "1": "gender",
+  "2": "race"
+ },
+ "set_cleric_range": {
+  "1": "value",
+  "2": "healRange"
+ },
+ "set_damager": {
+  "1": "damage",
+  "2": "extra"
+ },
+ "set_die_nt": {
+  "1": "delay"
+ },
+ "set_dmg": {
+  "1": "dmg",
+  "2": "radius",
+  "3": "amt",
+  "4": "gravity"
+ },
+ "set_dur": {
+  "1": "duration"
+ },
+ "set_edge_prefix": {
+  "1": "prefix"
+ },
+ "set_fade_in": {
+  "1": "fadeRate"
+ },
+ "set_glow_id": {
+  "1": "glowId"
+ },
+ "set_hands": {
+  "1": "handrOn",
+  "2": "handlOn"
+ },
+ "set_hour_hand": {
+  "1": "hour",
+  "2": "speedScale"
+ },
+ "set_item_type": {
+  "1": "itemType"
+ },
+ "set_lantern": {
+  "1": "lanternColor"
+ },
+ "set_leader": {
+  "1": "isLeader"
+ },
+ "set_material": {
+  "1": "materialType"
+ },
+ "set_maw": {
+  "1": "skin"
+ },
+ "set_mclip": {
+  "1": "clip"
+ },
+ "set_menu_type": {
+  "1": "value",
+  "2": "menuType"
+ },
+ "set_minute_hand": {
+  "1": "minute",
+  "2": "speedScale"
+ },
+ "set_mmode": {
+  "1": "moveMode"
+ },
+ "set_model": {
+  "1": "model"
+ },
+ "set_mspeed": {
+  "1": "ratio"
+ },
+ "set_mspeed2": {
+  "1": "moveSpeed"
+ },
+ "set_mspeedt": {
+  "1": "moveSpeed"
+ },
+ "set_notarget": {
+  "1": "playingDead"
+ },
+ "set_patrol": {
+  "1": "radius"
+ },
+ "set_pit_prefix": {
+  "1": "prefix"
+ },
+ "set_poisonous": {
+  "1": "value"
+ },
+ "set_pushamt": {
+  "1": "pushAmount"
+ },
+ "set_race": {
+  "1": "raceName"
+ },
+ "set_range": {
+  "1": "units"
+ },
+ "set_rebirths": {
+  "1": "lives"
+ },
+ "set_req_pick": {
+  "1": "chance"
+ },
+ "set_roam": {
+  "1": "enabled"
+ },
+ "set_sail": {
+  "1": "value",
+  "2": "destination"
+ },
+ "set_say_die": {
+  "1": "deathText"
+ },
+ "set_say_spawn": {
+  "1": "spawnText"
+ },
+ "set_say_spot": {
+  "1": "spotText"
+ },
+ "set_scale": {
+  "1": "scale"
+ },
+ "set_scale_nb": {
+  "1": "ratio"
+ },
+ "set_scale_nbr": {
+  "1": "ratio"
+ },
+ "set_scale_nr": {
+  "1": "ratio"
+ },
+ "set_self_adj": {
+  "1": "adjDown"
+ },
+ "set_shad_tele_point": {
+  "1": "origin",
+  "2": "index",
+  "3": "trigger"
+ },
+ "set_size": {
+  "1": "size"
+ },
+ "set_skin": {
+  "1": "skinIndex"
+ },
+ "set_solid": {
+  "1": "solidType"
+ },
+ "set_spawn_point": {
+  "1": "spawnPosition"
+ },
+ "set_start_burrowed": {
+  "1": "value",
+  "2": "proxRange"
+ },
+ "set_status_canattack": {
+  "1": "enabled"
+ },
+ "set_status_canduck": {
+  "1": "enabled"
+ },
+ "set_status_canjump": {
+  "1": "enabled"
+ },
+ "set_status_canmove": {
+  "1": "enabled"
+ },
+ "set_status_canrun": {
+  "1": "enabled"
+ },
+ "set_status_flags": {
+  "1": "canMove",
+  "2": "canRun",
+  "3": "canJump",
+  "4": "canDuck",
+  "5": "canAttack"
+ },
+ "set_stepsize": {
+  "1": "stepSize"
+ },
+ "set_stun_prot": {
+  "1": "stunProtection"
+ },
+ "set_takedmg": {
+  "1": "typeRatio"
+ },
+ "set_takedmg_holy": {
+  "1": "holyRatio"
+ },
+ "set_target": {
+  "1": "target"
+ },
+ "set_tele_hunter": {
+  "1": "frequency"
+ },
+ "set_tele_hunter_random": {
+  "1": "frequency"
+ },
+ "set_tele_mode": {
+  "1": "value",
+  "2": "teleportMode"
+ },
+ "set_telebird": {
+  "1": "radius"
+ },
+ "set_test_beam": {
+  "1": "sourceEnt",
+  "2": "targetEnt"
+ },
+ "set_time": {
+  "1": "hour",
+  "2": "minute"
+ },
+ "set_trap": {
+  "1": "trapType"
+ },
+ "set_type": {
+  "1": "arrowScript",
+  "2": "bundleSize"
+ },
+ "set_view": {
+  "1": "viewOffsetZ"
+ },
+ "set_view_dist": {
+  "1": "viewDistance"
+ },
+ "set_weapon": {
+  "1": "weapon"
+ },
+ "set_weight": {
+  "1": "entity"
+ },
+ "set_wizard_center": {
+  "1": "center"
+ },
+ "set_xp_tr": {
+  "1": "minutes"
+ },
+ "setgold": {
+  "1": "amount"
+ },
+ "setlevels": {
+  "1": "value",
+  "2": "level"
+ },
+ "setquest": {
+  "1": "questName",
+  "2": "value"
+ },
+ "setsoc_goalrad": {
+  "1": "goalRadius"
+ },
+ "setup_barrel": {
+  "1": "barrelConfig"
+ },
+ "shadow_knife": {
+  "1": "origin",
+  "2": "angles",
+  "3": "impactOrigin",
+  "4": "hitType",
+  "5": "spriteScale"
+ },
+ "shield_hit": {
+  "1": "attacker",
+  "2": "inflictor"
+ },
+ "shield_pre_block_effect": {
+  "1": "attacker",
+  "2": "inflictor",
+  "3": "damage",
+  "4": "damageType"
+ },
+ "shieldbash_dodamage": {
+  "1": "flag"
+ },
+ "shoot_spur": {
+  "1": "startPosition",
+  "2": "yaw"
+ },
+ "show_hbar": {
+  "1": "origin",
+  "2": "frame",
+  "3": "scale",
+  "4": "index"
+ },
+ "show_hbar_player": {
+  "1": "player"
+ },
+ "show_orb": {
+  "1": "color"
+ },
+ "show_seal_warning": {
+  "1": "origin",
+  "2": "radius",
+  "3": "bodyOffset",
+  "4": "color"
+ },
+ "shreak_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "skele_arrow_fx": {
+  "1": "arrowOrigin"
+ },
+ "skele_handle_effect": {
+  "1": "target"
+ },
+ "skele_swing_dodamage": {
+  "1": "attackHit",
+  "2": "target"
+ },
+ "slam_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "slash_dodamage": {
+  "1": "value",
+  "2": "value2",
+  "3": "value3",
+  "4": "value4",
+  "5": "value5"
+ },
+ "slayall": {
+  "1": "evilOnly"
+ },
+ "slithar_escape": {
+  "1": "delay"
+ },
+ "slithar_stop": {
+  "1": "yaw"
+ },
+ "slithar_to_me": {
+  "1": "destination",
+  "2": "range",
+  "3": "caller"
+ },
+ "smash_fx": {
+  "1": "origin"
+ },
+ "smoke_spr_create": {
+  "1": "position",
+  "2": "sprite",
+  "3": "scale"
+ },
+ "sorc_hop": {
+  "1": "verticalDifference"
+ },
+ "sorc_hop_friendly": {
+  "1": "verticalDifference"
+ },
+ "sorc_tele_fx": {
+  "1": "origin"
+ },
+ "soup_price": {
+  "1": "destination"
+ },
+ "spawn_atholo": {
+  "1": "target"
+ },
+ "spawn_corpse": {
+  "1": "entityIndex",
+  "2": "animIndex",
+  "3": "renderProps"
+ },
+ "spawn_drain_sprite_cl": {
+  "1": "position",
+  "2": "drainer",
+  "3": "angles"
+ },
+ "spawn_in": {
+  "1": "spawnYaw"
+ },
+ "spawn_mob": {
+  "1": "script"
+ },
+ "special_01_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "special_01_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "special_02_damaged_other": {
+  "1": "target",
+  "2": "damage"
+ },
+ "special_02_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "spell1_strike": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "spell_attack": {
+  "1": "target"
+ },
+ "spell_casted": {
+  "1": "hitType",
+  "2": "endPosition",
+  "3": "target"
+ },
+ "spider_defile": {
+  "1": "target"
+ },
+ "spit_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "sprite_popped": {
+  "1": "index"
+ },
+ "sprite_splode": {
+  "1": "sparkOrigin"
+ },
+ "start_combat": {
+  "1": "attacker"
+ },
+ "start_forge_key": {
+  "1": "player"
+ },
+ "start_repair_dagger": {
+  "1": "player"
+ },
+ "steelpipe_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "stomp_dodamage": {
+  "1": "flag",
+  "2": "target"
+ },
+ "stomp_fx": {
+  "1": "origin"
+ },
+ "stop_moving": {
+  "1": "delay"
+ },
+ "storm_change_speed": {
+  "1": "spinSpeed"
+ },
+ "strike_target": {
+  "1": "target"
+ },
+ "strong_punch_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "stun_resist": {
+  "1": "value",
+  "2": "stunMultiplier"
+ },
+ "stunburst_go": {
+  "1": "pos",
+  "2": "radius",
+  "3": "repel",
+  "4": "dmg"
+ },
+ "stunburst_go_cl": {
+  "1": "pos",
+  "2": "radius"
+ },
+ "suicide_dodamage": {
+  "1": "value",
+  "2": "target"
+ },
+ "summon_acknowledge": {
+  "1": "command"
+ },
+ "summon_check": {
+  "1": "spawnPosition"
+ },
+ "summon_rock": {
+  "1": "location"
+ },
+ "summon_summoned": {
+  "1": "value",
+  "2": "lifetime",
+  "3": "minAttack"
+ },
+ "super_lure": {
+  "1": "target",
+  "2": "lureRace"
+ },
+ "suspend_move": {
+  "1": "resumeDelay"
+ },
+ "suspend_movement": {
+  "1": "holdAnimation"
+ },
+ "sustain_storm": {
+  "1": "position"
+ },
+ "sv_update_vel": {
+  "1": "angles",
+  "2": "velocity",
+  "3": "origin"
+ },
+ "svr_update_fireball_vec": {
+  "1": "angles",
+  "2": "serverOrigin",
+  "3": "targetIdx"
+ },
+ "svr_update_vec": {
+  "1": "angles"
+ },
+ "swing_dodamage": {
+  "1": "hit",
+  "2": "entHit"
+ },
+ "swing_fist": {
+  "1": "target"
+ },
+ "swipe_attack": {
+  "1": "enemy"
+ },
+ "swipe_damaged_other": {
+  "1": "target"
+ },
+ "swipe_dodamage": {
+  "1": "hit",
+  "2": "entHit"
+ },
+ "switch_page1": {
+  "1": "target"
+ },
+ "switch_page2": {
+  "1": "target"
+ },
+ "sword_on": {
+  "1": "spitSprites"
+ },
+ "tail_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "tally_enemy": {
+  "1": "npc"
+ },
+ "tally_quest_items": {
+  "1": "player"
+ },
+ "target_busy": {
+  "1": "target"
+ },
+ "tc_add_artifact": {
+  "1": "scriptname",
+  "2": "dropChance"
+ },
+ "tc_open": {
+  "1": "player"
+ },
+ "tele": {
+  "1": "destX",
+  "2": "destY",
+  "3": "destZ"
+ },
+ "teledest": {
+  "1": "uniqueName"
+ },
+ "teleforward": {
+  "1": "forwardDistance"
+ },
+ "teleport_player": {
+  "1": "value",
+  "2": "target"
+ },
+ "testdmg": {
+  "1": "damageType"
+ },
+ "testmap_newlevel": {
+  "1": "testMode"
+ },
+ "throw_knife": {
+  "1": "target"
+ },
+ "throwatk_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "time_change": {
+  "1": "oldDaytime",
+  "2": "newDaytime"
+ },
+ "titan_setup": {
+  "1": "titanIndex",
+  "2": "teleSprite",
+  "3": "glowSprite"
+ },
+ "titan_summon_sprite": {
+  "1": "sumPoint"
+ },
+ "toss_rock": {
+  "1": "target",
+  "2": "damage"
+ },
+ "trade_busy": {
+  "1": "player"
+ },
+ "transfer_location": {
+  "1": "newLocation"
+ },
+ "transfer_owner": {
+  "1": "owner"
+ },
+ "transform_finalize": {
+  "1": "birdPosition"
+ },
+ "transform_return": {
+  "1": "deathOrigin",
+  "2": "secondPoint"
+ },
+ "trig_damage": {
+  "1": "triggerName",
+  "2": "damage",
+  "3": "damageType"
+ },
+ "trigger_off": {
+  "1": "type"
+ },
+ "trigger_on": {
+  "1": "type"
+ },
+ "troll_got_ring": {
+  "1": "winner"
+ },
+ "try_vampire_target": {
+  "1": "owner",
+  "2": "target",
+  "3": "healAmt"
+ },
+ "turn_undead": {
+  "1": "holyDamage",
+  "2": "exorcist"
+ },
+ "undamael_reward_victor": {
+  "1": "swordLocation"
+ },
+ "unpoof_fx": {
+  "1": "spriteCenter"
+ },
+ "update_caxe_sprite": {
+  "1": "type"
+ },
+ "update_drainer": {
+  "1": "drainerSlot",
+  "2": "angles"
+ },
+ "update_model": {
+  "1": "modelIndex"
+ },
+ "update_submodels": {
+  "1": "activate",
+  "2": "side"
+ },
+ "update_view": {
+  "1": "destV",
+  "2": "speed",
+  "3": "value"
+ },
+ "use_trigger": {
+  "1": "owner",
+  "2": "trigger"
+ },
+ "usetrig": {
+  "1": "trigger"
+ },
+ "validate_target": {
+  "1": "target"
+ },
+ "vendor_offer_help": {
+  "1": "player"
+ },
+ "vendor_offerstore": {
+  "1": "player"
+ },
+ "vendor_used": {
+  "1": "player"
+ },
+ "verify_friendly": {
+  "1": "playerId",
+  "2": "calledFromMenu"
+ },
+ "vgoblin_chief_died": {
+  "1": "chiefOrigin"
+ },
+ "view_change": {
+  "1": "viewDirection"
+ },
+ "volcano_dodamage": {
+  "1": "hit",
+  "2": "entHit",
+  "3": "startPosition",
+  "4": "endPosition",
+  "5": "dmgType",
+  "6": "damage"
+ },
+ "volcono_shoot_rock": {
+  "1": "velocity",
+  "2": "gravity",
+  "3": "origin"
+ },
+ "vote_deralia": {
+  "1": "player"
+ },
+ "wand_prep_cl": {
+  "1": "position",
+  "2": "color"
+ },
+ "wand_strike_dmg": {
+  "1": "target"
+ },
+ "water_createsplash": {
+  "1": "splashOrigin"
+ },
+ "water_createsplash_big": {
+  "1": "splashOrigin"
+ },
+ "weak_punch_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "weapon_damaged_other": {
+  "1": "targetHit",
+  "2": "dmg"
+ },
+ "wearing_armor": {
+  "1": "equipped",
+  "2": "type",
+  "3": "offset"
+ },
+ "weather_change": {
+  "1": "weatherType",
+  "2": "weatherParam"
+ },
+ "weather_clear": {
+  "1": "clearMode"
+ },
+ "weather_dest_fog": {
+  "1": "color",
+  "2": "density",
+  "3": "fogStart",
+  "4": "fogEnd",
+  "5": "underground"
+ },
+ "weather_finalize": {
+  "1": "type"
+ },
+ "weather_force_change": {
+  "1": "type"
+ },
+ "weather_set_fog": {
+  "1": "color",
+  "2": "density",
+  "3": "fogStart",
+  "4": "fogEnd",
+  "5": "underground"
+ },
+ "withdraw_items": {
+  "1": "playerId"
+ },
+ "wolfatk_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "worldevent_time": {
+  "1": "hour",
+  "2": "minute",
+  "3": "timeRatio"
+ },
+ "worldevent_weather": {
+  "1": "weatherType"
+ },
+ "wrong_ring": {
+  "1": "player"
+ },
+ "wtf_vote_no": {
+  "1": "player"
+ },
+ "wtf_vote_yes": {
+  "1": "player"
+ },
+ "wyrm_appear": {
+  "1": "target",
+  "2": "reason"
+ },
+ "wyrm_pick_movement_mode": {
+  "1": "reason"
+ },
+ "wyrm_teleport": {
+  "1": "reason"
+ },
+ "xbow_dodamage": {
+  "1": "hit"
+ },
+ "zap_dodamage": {
+  "1": "hit",
+  "2": "target"
+ },
+ "zap_dridje": {
+  "1": "caster"
+ },
+ "zap_minion": {
+  "1": "minion"
+ },
+ "zapbreath_dodamage": {
+  "1": "hit",
+  "2": "target"
+ }
+}
