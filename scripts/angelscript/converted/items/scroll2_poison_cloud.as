@@ -1,0 +1,46 @@
+#pragma context server
+
+// Converted from items/scroll2_poison_cloud.script by msc_transpiler.
+
+#include "runtime/ScriptEntity.as"
+#include "converted/items/base_scroll.as"
+
+[script "items/scroll2_poison_cloud"]
+class Scroll2PoisonCloud : BaseScrollScript
+{
+	// Variables declared by included files, with the value they start with in this script
+	Scroll2PoisonCloud()
+	{
+		BASE_SPELL_SCRIPT = "magic_hand_poison_cloud";
+		BASE_REQUIRED_SKILL = "skill.spellcasting.affliction";
+		BASE_REQUIRED_LEVEL = 15;
+		SPELL_MAKER_SCRIPT = "monsters/companion/spell_maker_affliction";
+		SPELL_MAKER_HEIGHT = 48;
+	}
+
+	// game_spawn
+	void OnGameSpawn(string playerRace = "", string playerGender = "")
+	{
+		BaseItemExtras_OnGameSpawn(playerRace, playerGender); // items/base_item_extras
+		BaseTome_OnGameSpawn(playerRace, playerGender); // items/base_tome
+		BaseScroll_OnGameSpawn(playerRace, playerGender); // items/base_scroll
+
+		SetName("Poison Cloud Scroll");
+		SetDescription("A magical compendium of strong affliction enchantments.");
+
+		SetHudSprite("trade", "216");
+
+		SetValue(900);
+	}
+
+	// ---- Engine wiring (generated) ----
+
+	// Events and timers by their .script names (engine, callexternal, timers):
+	// this script's own, then each included file's.
+	// Variables are reached by their .script names directly (the fields keep those names).
+	bool DispatchEvent(const string &in name, const array<string> &in params) override
+	{
+		if (name == "game_spawn") { OnGameSpawn(Param(params, 0), Param(params, 1)); return true; }
+		return BaseScrollScript::DispatchEvent(name, params);
+	}
+}
